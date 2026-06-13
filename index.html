@@ -796,6 +796,88 @@
     background: var(--green);
     margin-right: 4px;
   }
+
+  /* ── AVISO / DISCLAIMER ── */
+  .disclaimer {
+    background: rgba(230,57,70,0.08);
+    border: 1px solid rgba(230,57,70,0.3);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 18px;
+    font-size: 12px;
+    color: var(--sub);
+    line-height: 1.6;
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+  }
+  .disclaimer-icon { font-size: 16px; flex-shrink: 0; }
+  .disclaimer strong { color: var(--red); }
+  .disclaimer-foot {
+    background: var(--bg);
+    border: 1px dashed var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin: 14px 0;
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.6;
+    text-align: center;
+  }
+
+  /* ── MARCADOR CLARO ── */
+  .scoreboard {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: 8px;
+    margin: 6px 0 12px;
+  }
+  .sb-team {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    min-width: 0;
+  }
+  .sb-role {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 2px 8px;
+    border-radius: 4px;
+  }
+  .sb-role.local { color: var(--cyan); background: rgba(0,212,255,0.1); }
+  .sb-role.visitor { color: var(--gold); background: rgba(255,215,0,0.1); }
+  .sb-flag { font-size: 30px; line-height: 1; }
+  .sb-name {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    text-align: center;
+    line-height: 1.1;
+  }
+  .sb-name.local { color: var(--cyan); }
+  .sb-name.visitor { color: var(--gold); }
+  .sb-goals {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 46px;
+    font-weight: 700;
+    line-height: 1;
+    margin-top: 2px;
+  }
+  .sb-goals.local { color: var(--cyan); }
+  .sb-goals.visitor { color: var(--gold); }
+  .sb-sep {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 28px;
+    font-weight: 700;
+    color: #2a4a6a;
+    align-self: flex-end;
+    padding-bottom: 4px;
+  }
 </style>
 </head>
 <body>
@@ -821,6 +903,12 @@
     <a href="https://aistudio.google.com/app/apikey" target="_blank" class="gemini-link">
       🔑 Obtener API key gratuita en aistudio.google.com <span>(es gratis, sin tarjeta)</span>
     </a>
+
+    <!-- AVISO IMPORTANTE -->
+    <div class="disclaimer">
+      <span class="disclaimer-icon">⚠️</span>
+      <div><strong>Esto NO predice el futuro.</strong> Los resultados, marcadores y goleadores son estimaciones generadas por inteligencia artificial a partir de su conocimiento de los equipos. No son pronósticos fiables ni datos reales: el mismo partido puede dar resultados distintos cada vez. Úsalo como entretenimiento y para explorar escenarios, nunca como base para apuestas ni decisiones.</div>
+    </div>
 
     <!-- TOGGLE BÚSQUEDA EN VIVO -->
     <div class="search-toggle">
@@ -1418,6 +1506,11 @@ function renderResults(d, local, visitor, lf, vf, phase, fromCache) {
     resumen_narrativo: 'Análisis no disponible para este partido.'
   }, d.prediccion || {});
 
+  // Separar el marcador "2-1" en goles de local y visitante (tolerante a formatos raros)
+  let golLocal = ND, golVisitante = ND;
+  const mScore = String(p.marcador_probable).match(/(\d+)\s*[-–:]\s*(\d+)/);
+  if (mScore) { golLocal = mScore[1]; golVisitante = mScore[2]; }
+
   const tLado = () => ({
     estilo: ND, posesion_estimada: 0, linea_defensiva: ND, presion: ND,
     fortaleza_clave: ND, debilidad_clave: ND
@@ -1471,7 +1564,21 @@ function renderResults(d, local, visitor, lf, vf, phase, fromCache) {
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
         Predicción de resultado
       </div>
-      <div class="score-big">${p.marcador_probable}</div>
+      <div class="scoreboard">
+        <div class="sb-team">
+          <span class="sb-role local">Local</span>
+          <span class="sb-flag">${lf}</span>
+          <span class="sb-name local">${local}</span>
+          <span class="sb-goals local">${golLocal}</span>
+        </div>
+        <span class="sb-sep">−</span>
+        <div class="sb-team">
+          <span class="sb-role visitor">Visitante</span>
+          <span class="sb-flag">${vf}</span>
+          <span class="sb-name visitor">${visitor}</span>
+          <span class="sb-goals visitor">${golVisitante}</span>
+        </div>
+      </div>
       <div class="range-badge">${p.rango_goles}</div>
       <div class="tipo-badge">${p.tipo_partido}</div>
       <div class="prob-row">
@@ -1613,6 +1720,10 @@ function renderResults(d, local, visitor, lf, vf, phase, fromCache) {
             </div>`).join('')}
         </div>
       </div>
+    </div>
+
+    <div class="disclaimer-foot">
+      ⚠️ Predicción generada por IA. No es un pronóstico real ni fiable: el fútbol es impredecible y el mismo partido puede dar resultados distintos. Solo para entretenimiento.
     </div>
 
     <button class="back-btn" onclick="resetApp()" style="width:100%;justify-content:center;padding:14px">
