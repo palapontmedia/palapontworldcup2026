@@ -1397,8 +1397,8 @@ async function startAnalysis() {
   showLoading();
 
   const searchInstruction = useSearch
-    ? `IMPORTANTE — USA BÚSQUEDA EN INTERNET: Antes de responder, busca en internet las CONVOCATORIAS OFICIALES Y DEFINITIVAS de 26 jugadores de ambas selecciones para el Mundial 2026 (las federaciones las confirmaron a la FIFA el 1-2 de junio de 2026). SOLO menciona como posibles goleadores a jugadores que estén REALMENTE convocados en la lista oficial actual de cada selección. No incluyas jugadores lesionados, no convocados o retirados. Busca también noticias recientes sobre lesiones, estado de forma actual, y cualquier novedad de última hora de ambos equipos. Basa tu análisis en esta información real y actualizada, no solo en tu memoria.`
-    : `Usa tu conocimiento sobre las plantillas de ambas selecciones para el Mundial 2026. Menciona como posibles goleadores solo a jugadores que sean realistas y habituales en cada selección. Evita jugadores que sepas que están retirados de la selección.`;
+    ? `INSTRUCCIÓN OBLIGATORIA SOBRE CONVOCATORIAS — LÉELA CON ATENCIÓN: Las convocatorias finales de 26 jugadores para el Mundial 2026 se confirmaron a finales de mayo / principios de junio de 2026, y contienen MUCHAS sorpresas y ausencias de estrellas habituales. ANTES de nombrar a ningún goleador, busca en internet la convocatoria oficial y definitiva de 26 jugadores de CADA selección de este partido para el Mundial 2026. Verifica jugador por jugador. NO te fíes de tu memoria: muchos delanteros famosos que crees titulares NO fueron convocados (por decisión técnica, lesión o relevo generacional). SOLO puedes nombrar como posibles goleadores a jugadores que aparezcan EXPLÍCITAMENTE en la convocatoria oficial de 26 que encuentres en la búsqueda. Si dudas de si un jugador está convocado, NO lo incluyas. Busca también lesiones y novedades recientes.`
+    : `ADVERTENCIA CRÍTICA SOBRE CONVOCATORIAS: Las convocatorias del Mundial 2026 tienen ausencias importantes de jugadores estrella habituales. Como NO tienes búsqueda activada, NO puedes verificar las listas oficiales. Por tanto, para los goleadores nombra solo a los jugadores MÁS consolidados e indiscutibles de cada selección (capitanes, estrellas absolutas con rol fijo). EVITA nombrar a delanteros de los que no tengas certeza absoluta de que siguen siendo titulares fijos en 2026, porque podrían no estar convocados. Es preferible nombrar pocos jugadores muy seguros que arriesgar con nombres dudosos.`;
 
   const prompt = `Eres el analista deportivo y científico de datos más prestigioso del mundo del fútbol, al nivel de los equipos de modelización de Opta, StatsBomb y los departamentos de análisis de las grandes federaciones. Combinas conocimiento táctico profundo, dominio de métricas avanzadas (xG, xGA, PPDA, progresión de balón, presión, transiciones) y un razonamiento probabilístico riguroso de big data.
 
@@ -1457,14 +1457,14 @@ REGLA DE HONESTIDAD SOBRE LA CONFIANZA: El fútbol es altamente impredecible. El
     try {
       json = await callGemini(prompt, useSearch, key);
     } catch (firstErr) {
-      // Si el fallo fue de formato/longitud (no de cuota ni de clave),
-      // reintentamos UNA vez sin búsqueda (más fiable para generar JSON limpio).
       const m = (firstErr.message || '').toLowerCase();
       const isFormatError = m.includes('formato_invalido') || m.includes('cortó') || m.includes('vacía');
       const isQuotaOrKey = m.includes('quota') || m.includes('429') || m.includes('api key') || m.includes('403') || m.includes('401');
       if (isFormatError && !isQuotaOrKey) {
-        document.getElementById('loading-text').textContent = 'Reintentando con formato limpio...';
-        json = await callGemini(prompt, false, key); // segundo intento sin búsqueda
+        // Reintentamos manteniendo la búsqueda si estaba activada (para no perder
+        // los datos reales de convocatorias). Solo cambia el reintento del modelo.
+        document.getElementById('loading-text').textContent = 'Reintentando análisis...';
+        json = await callGemini(prompt, useSearch, key);
       } else {
         throw firstErr;
       }
@@ -1680,6 +1680,11 @@ function renderResults(d, local, visitor, lf, vf, phase, fromCache) {
       <div class="card-title">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
         Goleadores probables
+      </div>
+      <div style="font-size:11px;color:var(--muted);background:var(--bg);border-radius:8px;padding:8px 10px;margin-bottom:10px;line-height:1.5">
+        ${useSearch
+          ? '🌐 Generado con búsqueda en vivo. Aun así, verifica los nombres: el modelo puede equivocarse con las convocatorias.'
+          : '⚠️ Búsqueda en vivo desactivada: estos nombres salen de la memoria del modelo y pueden incluir jugadores NO convocados. Actívala para mayor fiabilidad.'}
       </div>
       <div class="scorers">
         ${g.map(s => `
