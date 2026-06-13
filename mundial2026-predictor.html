@@ -1,0 +1,1054 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Mundial 2026">
+<meta name="theme-color" content="#0A0E1A">
+<title>Mundial 2026 · Predictor IA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0A0E1A;
+    --card: #0D1B2A;
+    --border: #1a3a5c;
+    --cyan: #00D4FF;
+    --gold: #FFD700;
+    --red: #E63946;
+    --green: #1DB954;
+    --text: #F0F0F0;
+    --muted: #8B9CB6;
+    --sub: #B0C4D8;
+    --dark-sub: #6B8CAE;
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  html, body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 16px;
+    min-height: 100%;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body { padding-bottom: calc(20px + var(--safe-bottom)); }
+
+  /* ── HEADER ── */
+  .header {
+    background: var(--card);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 16px;
+    padding-top: calc(14px + env(safe-area-inset-top, 0px));
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .header-ball { font-size: 26px; }
+  .header-logo {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 19px;
+    font-weight: 700;
+    color: var(--cyan);
+    letter-spacing: 1.5px;
+    line-height: 1.1;
+  }
+  .header-sub {
+    font-size: 10px;
+    color: var(--muted);
+    letter-spacing: 0.8px;
+    text-transform: uppercase;
+  }
+
+  /* ── MAIN ── */
+  .main { padding: 16px; }
+
+  /* ── SECTION LABEL ── */
+  .sec-label {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+
+  /* ── API BAR ── */
+  .api-bar {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 18px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .api-bar svg { flex-shrink: 0; color: var(--cyan); }
+  .api-bar input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text);
+    font-size: 13px;
+    font-family: 'Inter', sans-serif;
+    min-width: 0;
+  }
+  .api-bar input::placeholder { color: #3a4a5a; }
+  .api-badge {
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 5px;
+    font-weight: 600;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .api-badge.ok { background: #0a2a1a; color: var(--green); border: 1px solid var(--green); }
+  .api-badge.no { background: #2a0a0a; color: var(--red); border: 1px solid var(--red); }
+
+  /* ── LINK GEMINI ── */
+  .gemini-link {
+    display: block;
+    text-align: center;
+    font-size: 12px;
+    color: var(--cyan);
+    margin-bottom: 18px;
+    text-decoration: none;
+    padding: 8px;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+  }
+  .gemini-link span { color: var(--muted); }
+
+  /* ── TEAM SELECTORS ── */
+  .vs-row {
+    display: grid;
+    grid-template-columns: 1fr 36px 1fr;
+    gap: 8px;
+    align-items: start;
+    margin-bottom: 14px;
+  }
+  .team-box {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 10px;
+  }
+  .team-box-label {
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    font-weight: 600;
+    margin-bottom: 8px;
+    text-align: center;
+  }
+  .team-box-label.local { color: var(--cyan); }
+  .team-box-label.visitor { color: var(--gold); }
+  .team-select {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    padding: 9px 8px;
+    font-size: 13px;
+    font-family: 'Inter', sans-serif;
+    outline: none;
+    cursor: pointer;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  .team-select:focus { border-color: var(--cyan); }
+  .vs-mid {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-top: 30px;
+  }
+  .vs-text {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    color: #2a4a6a;
+  }
+
+  /* ── PHASE SELECT ── */
+  .phase-wrap { margin-bottom: 18px; }
+  .phase-select {
+    width: 100%;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    padding: 12px 14px;
+    font-size: 14px;
+    font-family: 'Inter', sans-serif;
+    outline: none;
+    cursor: pointer;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  .phase-select:focus { border-color: var(--cyan); }
+
+  /* ── ANALYZE BUTTON ── */
+  .analyze-btn {
+    width: 100%;
+    background: rgba(0,212,255,0.08);
+    border: 1.5px solid var(--cyan);
+    border-radius: 12px;
+    color: var(--cyan);
+    padding: 16px;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: background 0.2s;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  .analyze-btn:active { background: rgba(0,212,255,0.18); }
+  .analyze-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+  /* ── LOADING ── */
+  .loading {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 18px;
+    padding: 50px 20px;
+  }
+  .loading.show { display: flex; }
+  .loading-ball {
+    font-size: 44px;
+    animation: spinball 1s linear infinite;
+    display: block;
+  }
+  @keyframes spinball { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+  .loading-text {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 15px;
+    color: var(--cyan);
+    letter-spacing: 1.5px;
+    text-align: center;
+  }
+  .loading-dots span {
+    display: inline-block;
+    width: 7px; height: 7px;
+    background: var(--border);
+    border-radius: 50%;
+    margin: 0 3px;
+    animation: dotpulse 1.2s infinite;
+  }
+  .loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+  .loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes dotpulse { 0%,80%,100% { background: var(--border); } 40% { background: var(--cyan); } }
+
+  /* ── RESULTS ── */
+  .results { display: none; }
+  .results.show { display: block; }
+
+  /* ── CARDS ── */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 12px;
+    opacity: 0;
+    transform: translateY(12px);
+    transition: opacity 0.4s ease, transform 0.4s ease;
+  }
+  .card.visible { opacity: 1; transform: translateY(0); }
+  .card-title {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .card-title svg { flex-shrink: 0; }
+
+  /* CARD A — PREDICCIÓN */
+  .score-big {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 52px;
+    font-weight: 700;
+    color: var(--gold);
+    text-align: center;
+    letter-spacing: 6px;
+    margin: 4px 0 8px;
+    line-height: 1;
+  }
+  .prob-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 6px;
+    margin-bottom: 10px;
+  }
+  .prob-item { text-align: center; }
+  .prob-label { font-size: 10px; color: var(--muted); margin-bottom: 3px; }
+  .prob-val {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+  }
+  .prob-val.l { color: var(--cyan); }
+  .prob-val.d { color: var(--muted); }
+  .prob-val.v { color: var(--gold); }
+  .prob-bar-track {
+    height: 6px;
+    background: var(--bg);
+    border-radius: 3px;
+    overflow: hidden;
+    display: flex;
+    margin-bottom: 10px;
+  }
+  .pb { height: 100%; border-radius: 3px; transition: width 1.2s ease; }
+  .pb-l { background: var(--cyan); }
+  .pb-d { background: #2a4a6a; }
+  .pb-v { background: var(--gold); }
+  .range-badge {
+    display: block;
+    text-align: center;
+    background: rgba(0,212,255,0.08);
+    border: 1px solid rgba(0,212,255,0.25);
+    color: var(--cyan);
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 5px 12px;
+    border-radius: 7px;
+    margin-bottom: 8px;
+  }
+  .tipo-badge {
+    display: block;
+    text-align: center;
+    background: rgba(29,185,84,0.1);
+    border: 1px solid rgba(29,185,84,0.25);
+    color: var(--green);
+    font-size: 12px;
+    padding: 4px 12px;
+    border-radius: 20px;
+    margin-bottom: 10px;
+  }
+  .narrative {
+    font-size: 13px;
+    color: var(--sub);
+    line-height: 1.7;
+    padding: 12px;
+    background: var(--bg);
+    border-radius: 8px;
+    border-left: 3px solid var(--cyan);
+  }
+
+  /* CARD B — TÁCTICA */
+  .tactic-cols {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .tactic-col {
+    background: var(--bg);
+    border-radius: 8px;
+    padding: 10px;
+  }
+  .tac-name {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+  .tac-name.l { color: var(--cyan); }
+  .tac-name.v { color: var(--gold); }
+  .tac-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 4px 0;
+    border-bottom: 1px solid var(--border);
+    font-size: 12px;
+    gap: 6px;
+  }
+  .tac-row:last-child { border-bottom: none; }
+  .tac-k { color: var(--muted); flex-shrink: 0; }
+  .tac-v { color: var(--text); font-weight: 500; text-align: right; }
+  .tac-strength { font-size: 11px; margin-top: 6px; line-height: 1.5; }
+  .tac-strength .plus { color: var(--green); }
+  .tac-strength .minus { color: var(--red); }
+  .zone-box {
+    background: var(--bg);
+    border-radius: 8px;
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    border-left: 3px solid var(--gold);
+  }
+  .zone-lbl {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 10px;
+    color: var(--gold);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .zone-txt { font-size: 13px; color: var(--sub); }
+  .matchup-box {
+    background: var(--bg);
+    border-radius: 8px;
+    padding: 10px 12px;
+    border-left: 3px solid var(--cyan);
+  }
+  .matchup-lbl {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 10px;
+    color: var(--cyan);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .matchup-txt { font-size: 13px; color: var(--sub); }
+
+  /* CARD C — GOLEADORES */
+  .scorers { display: flex; flex-direction: column; gap: 8px; }
+  .scorer {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    background: var(--bg);
+    border-radius: 8px;
+    padding: 10px;
+  }
+  .scorer-pct {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--gold);
+    min-width: 50px;
+    line-height: 1;
+  }
+  .scorer-info { flex: 1; min-width: 0; }
+  .scorer-name { font-size: 14px; font-weight: 500; color: var(--text); }
+  .scorer-meta { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .scorer-reason { font-size: 12px; color: var(--dark-sub); margin-top: 3px; font-style: italic; line-height: 1.4; }
+  .scorer-bar-bg {
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    margin-top: 6px;
+    overflow: hidden;
+  }
+  .scorer-bar-fill {
+    height: 100%;
+    background: var(--gold);
+    border-radius: 2px;
+    transition: width 1.2s ease;
+  }
+
+  /* CARD D — CONTEXTO */
+  .context-cols {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .ctx-col {
+    background: var(--bg);
+    border-radius: 8px;
+    padding: 10px;
+  }
+  .ctx-name {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+  .ctx-name.l { color: var(--cyan); }
+  .ctx-name.v { color: var(--gold); }
+  .form-row { display: flex; gap: 4px; margin-bottom: 7px; flex-wrap: wrap; }
+  .form-badge {
+    width: 26px; height: 26px;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .fw { background: #0a2a1a; color: var(--green); border: 1px solid var(--green); }
+  .fd { background: #1a1a2a; color: var(--muted); border: 1px solid #3a4a5a; }
+  .fl { background: #2a0a0a; color: var(--red); border: 1px solid var(--red); }
+  .animo-badge {
+    display: inline-block;
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-weight: 600;
+    margin-bottom: 5px;
+  }
+  .animo-Positivo { background: #0a2a1a; color: var(--green); }
+  .animo-Neutro { background: #1a1a2a; color: var(--muted); }
+  .animo-Negativo { background: #2a0a0a; color: var(--red); }
+  .ctx-trend { font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+  .ctx-note { font-size: 11px; color: var(--dark-sub); line-height: 1.5; font-style: italic; }
+  .history-box {
+    background: var(--bg);
+    border-radius: 8px;
+    padding: 12px;
+  }
+  .history-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    gap: 6px;
+    margin-bottom: 10px;
+    text-align: center;
+  }
+  .h-num {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1;
+  }
+  .h-lbl { font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px; }
+  .history-trend { font-size: 12px; color: var(--sub); line-height: 1.6; }
+
+  /* CARD E — CONFIANZA */
+  .conf-wrap { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+  .gauge-svg { width: 180px; height: 100px; }
+  .conf-lbl { font-size: 12px; color: var(--muted); text-align: center; }
+  .uncertainty { width: 100%; display: flex; flex-direction: column; gap: 6px; }
+  .unc-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--sub);
+    background: var(--bg);
+    padding: 8px 10px;
+    border-radius: 7px;
+    border-left: 2px solid var(--red);
+    line-height: 1.5;
+  }
+  .unc-icon { flex-shrink: 0; font-size: 13px; margin-top: 1px; color: var(--red); }
+
+  /* MATCH HEADER */
+  .match-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+    text-align: center;
+  }
+  .mh-team {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+  }
+  .mh-team.l { color: var(--cyan); }
+  .mh-team.v { color: var(--gold); }
+  .mh-vs {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 13px;
+    color: #2a4a6a;
+  }
+  .mh-phase {
+    width: 100%;
+    text-align: center;
+    font-size: 10px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: -4px;
+    margin-bottom: 6px;
+  }
+  .back-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--muted);
+    padding: 7px 12px;
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    cursor: pointer;
+    margin-bottom: 14px;
+    transition: color 0.2s, border-color 0.2s;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  .back-btn:active { color: var(--cyan); border-color: var(--cyan); }
+
+  .error-box {
+    background: #2a0a0a;
+    border: 1px solid var(--red);
+    border-radius: 10px;
+    padding: 16px;
+    text-align: center;
+    color: var(--red);
+    font-size: 14px;
+    line-height: 1.6;
+    margin: 16px 0;
+  }
+  .error-box small { color: var(--muted); font-size: 12px; display: block; margin-top: 6px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-ball">⚽</div>
+  <div>
+    <div class="header-logo">MUNDIAL 2026 · PREDICTOR</div>
+    <div class="header-sub">Análisis Predictivo · Gemini AI</div>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- SELECTOR VIEW -->
+  <div id="selector-view">
+
+    <div class="sec-label">API Key de Gemini (gratuita)</div>
+    <div class="api-bar">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      <input type="password" id="api-key-input" placeholder="Pega tu API key de Google Gemini..." autocomplete="off" autocorrect="off" spellcheck="false">
+      <span class="api-badge no" id="api-badge">Sin clave</span>
+    </div>
+    <a href="https://aistudio.google.com/app/apikey" target="_blank" class="gemini-link">
+      🔑 Obtener API key gratuita en aistudio.google.com <span>(es gratis, sin tarjeta)</span>
+    </a>
+
+    <div class="sec-label">Selecciona el partido</div>
+
+    <div class="vs-row">
+      <div class="team-box">
+        <div class="team-box-label local">Local</div>
+        <select class="team-select" id="team-local">
+          <option value="">— Equipo —</option>
+        </select>
+      </div>
+      <div class="vs-mid"><div class="vs-text">VS</div></div>
+      <div class="team-box">
+        <div class="team-box-label visitor">Visitante</div>
+        <select class="team-select" id="team-visitor">
+          <option value="">— Equipo —</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="phase-wrap">
+      <select class="phase-select" id="phase-select">
+        <option value="Fase de Grupos">🏟 Fase de Grupos</option>
+        <option value="Octavos de Final">⚡ Octavos de Final</option>
+        <option value="Cuartos de Final">🔥 Cuartos de Final</option>
+        <option value="Semifinal">💥 Semifinal</option>
+        <option value="Final">🏆 Final</option>
+      </select>
+    </div>
+
+    <button class="analyze-btn" id="analyze-btn" onclick="startAnalysis()">
+      ⚽ &nbsp;ANALIZAR PARTIDO
+    </button>
+
+  </div>
+  <!-- / SELECTOR VIEW -->
+
+  <!-- LOADING VIEW -->
+  <div class="loading" id="loading-view">
+    <span class="loading-ball">⚽</span>
+    <div class="loading-text" id="loading-text">Iniciando análisis...</div>
+    <div class="loading-dots"><span></span><span></span><span></span></div>
+  </div>
+  <!-- / LOADING VIEW -->
+
+  <!-- RESULTS VIEW -->
+  <div class="results" id="results-view"></div>
+  <!-- / RESULTS VIEW -->
+
+</div><!-- /main -->
+
+<script>
+/* ── EQUIPOS ── */
+const TEAMS = [
+  {f:"🇧🇷",n:"Brasil"},{f:"🇦🇷",n:"Argentina"},{f:"🇺🇾",n:"Uruguay"},
+  {f:"🇨🇴",n:"Colombia"},{f:"🇪🇨",n:"Ecuador"},{f:"🇵🇾",n:"Paraguay"},
+  {f:"🇵🇪",n:"Perú"},{f:"🇧🇴",n:"Bolivia"},{f:"🇨🇱",n:"Chile"},
+  {f:"🇩🇪",n:"Alemania"},{f:"🇫🇷",n:"Francia"},{f:"🇪🇸",n:"España"},
+  {f:"🏴󠁧󠁢󠁥󠁮󠁧󠁿",n:"Inglaterra"},{f:"🇵🇹",n:"Portugal"},{f:"🇳🇱",n:"Países Bajos"},
+  {f:"🇧🇪",n:"Bélgica"},{f:"🇮🇹",n:"Italia"},{f:"🇨🇭",n:"Suiza"},
+  {f:"🇦🇹",n:"Austria"},{f:"🇹🇷",n:"Turquía"},{f:"🏴󠁧󠁢󠁳󠁣󠁴󠁿",n:"Escocia"},
+  {f:"🇺🇦",n:"Ucrania"},{f:"🇷🇴",n:"Rumanía"},{f:"🇵🇱",n:"Polonia"},
+  {f:"🇸🇮",n:"Eslovenia"},{f:"🇬🇷",n:"Grecia"},{f:"🇭🇷",n:"Croacia"},
+  {f:"🇷🇸",n:"Serbia"},{f:"🇩🇰",n:"Dinamarca"},{f:"🇸🇰",n:"Eslovaquia"},
+  {f:"🇭🇺",n:"Hungría"},{f:"🇦🇱",n:"Albania"},{f:"🇺🇸",n:"Estados Unidos"},
+  {f:"🇲🇽",n:"México"},{f:"🇨🇦",n:"Canadá"},{f:"🇯🇲",n:"Jamaica"},
+  {f:"🇨🇷",n:"Costa Rica"},{f:"🇵🇦",n:"Panamá"},{f:"🇭🇳",n:"Honduras"},
+  {f:"🇯🇵",n:"Japón"},{f:"🇰🇷",n:"Corea del Sur"},{f:"🇮🇷",n:"Irán"},
+  {f:"🇦🇺",n:"Australia"},{f:"🇸🇦",n:"Arabia Saudí"},{f:"🇺🇿",n:"Uzbekistán"},
+  {f:"🇮🇶",n:"Irak"},{f:"🇲🇦",n:"Marruecos"},{f:"🇸🇳",n:"Senegal"},
+  {f:"🇨🇲",n:"Camerún"},{f:"🇳🇬",n:"Nigeria"},{f:"🇪🇬",n:"Egipto"},
+  {f:"🇬🇭",n:"Ghana"},{f:"🇨🇮",n:"Costa de Marfil"},{f:"🇿🇦",n:"Sudáfrica"},
+  {f:"🇩🇿",n:"Argelia"},{f:"🇳🇿",n:"Nueva Zelanda"}
+];
+
+/* ── POBLAR SELECTS ── */
+const selLocal = document.getElementById('team-local');
+const selVisitor = document.getElementById('team-visitor');
+TEAMS.forEach(t => {
+  [selLocal, selVisitor].forEach(sel => {
+    const o = document.createElement('option');
+    o.value = t.n;
+    o.textContent = t.f + ' ' + t.n;
+    sel.appendChild(o);
+  });
+});
+
+/* ── API KEY ── */
+const apiInput = document.getElementById('api-key-input');
+const apiBadge = document.getElementById('api-badge');
+
+function validateKey(k) {
+  return k && k.length > 20;
+}
+
+apiInput.addEventListener('input', () => {
+  const k = apiInput.value.trim();
+  if (validateKey(k)) {
+    apiBadge.textContent = 'Clave lista';
+    apiBadge.className = 'api-badge ok';
+    sessionStorage.setItem('gm_key', k);
+  } else {
+    apiBadge.textContent = 'Sin clave';
+    apiBadge.className = 'api-badge no';
+  }
+});
+
+const saved = sessionStorage.getItem('gm_key');
+if (saved) {
+  apiInput.value = saved;
+  apiBadge.textContent = 'Clave lista';
+  apiBadge.className = 'api-badge ok';
+}
+
+/* ── LOADING MESSAGES ── */
+const LOADING_MSGS = [
+  "Analizando historial de enfrentamientos...",
+  "Evaluando forma reciente de los equipos...",
+  "Calculando probabilidades tácticas...",
+  "Identificando goleadores probables...",
+  "Consultando estadísticas de jugadores...",
+  "Generando predicción con Gemini AI..."
+];
+let loadInterval;
+
+function showLoading() {
+  let i = 0;
+  document.getElementById('loading-text').textContent = LOADING_MSGS[0];
+  loadInterval = setInterval(() => {
+    i = (i + 1) % LOADING_MSGS.length;
+    document.getElementById('loading-text').textContent = LOADING_MSGS[i];
+  }, 2000);
+}
+function hideLoading() { clearInterval(loadInterval); }
+
+/* ── MAIN ANALYSIS ── */
+async function startAnalysis() {
+  const local = selLocal.value;
+  const visitor = selVisitor.value;
+  const phase = document.getElementById('phase-select').value;
+  const key = apiInput.value.trim() || sessionStorage.getItem('gm_key') || '';
+
+  if (!local || !visitor) { alert('Selecciona ambos equipos'); return; }
+  if (local === visitor) { alert('Los equipos deben ser distintos'); return; }
+  if (!validateKey(key)) { alert('Introduce una API key válida de Google Gemini'); return; }
+
+  document.getElementById('selector-view').style.display = 'none';
+  document.getElementById('results-view').className = 'results';
+  document.getElementById('loading-view').className = 'loading show';
+  showLoading();
+
+  const lf = TEAMS.find(t => t.n === local)?.f || '';
+  const vf = TEAMS.find(t => t.n === visitor)?.f || '';
+
+  const prompt = `Eres un analista deportivo de élite especializado en fútbol internacional y big data. Tienes conocimiento exhaustivo sobre todas las selecciones nacionales del mundo: sus estilos de juego, jugadores clave, historial de partidos, estadísticas, formas recientes, entrenadores, y contexto actual hasta 2026.
+
+Analiza el siguiente partido del Mundial de Fútbol 2026 y responde ÚNICAMENTE con un objeto JSON válido, sin texto adicional, sin backticks, sin markdown, sin preamble.
+
+Partido: ${local} vs ${visitor}
+Fase: ${phase} del Mundial 2026
+
+Devuelve exactamente este JSON completado con datos reales y específicos para este partido:
+
+{"prediccion":{"marcador_probable":"2-1","probabilidad_local":55,"probabilidad_empate":22,"probabilidad_visitante":23,"rango_goles":"entre 2 y 4 goles","tipo_partido":"Favorito claro","resumen_narrativo":"Escribe aquí 3-4 frases de análisis narrativo detallado como analista experto, explicando cómo se espera que se desarrolle el partido, qué factores son determinantes y qué estilos entran en conflicto."},"tactica":{"local":{"estilo":"descripción concreta del estilo de juego en 1 frase","posesion_estimada":55,"linea_defensiva":"Alta","presion":"Intensa","fortaleza_clave":"Fortaleza táctica específica del equipo","debilidad_clave":"Debilidad táctica específica del equipo"},"visitante":{"estilo":"descripción concreta del estilo de juego en 1 frase","posesion_estimada":45,"linea_defensiva":"Media","presion":"Moderada","fortaleza_clave":"Fortaleza táctica específica del equipo","debilidad_clave":"Debilidad táctica específica del equipo"},"zona_decisiva":"Descripción de dónde se decidirá el partido tácticamente","matchup_clave":"Descripción del duelo individual más determinante del partido"},"goleadores_probables":[{"nombre":"Nombre real del jugador","equipo":"local","probabilidad_gol":45,"razon":"Razón específica basada en estadísticas o contexto real","posicion":"Delantero"},{"nombre":"Nombre real del jugador","equipo":"visitante","probabilidad_gol":38,"razon":"Razón específica basada en estadísticas o contexto real","posicion":"Delantero"},{"nombre":"Nombre real del jugador","equipo":"local","probabilidad_gol":28,"razon":"Razón específica","posicion":"Mediapunta"},{"nombre":"Nombre real del jugador","equipo":"visitante","probabilidad_gol":22,"razon":"Razón específica","posicion":"Centrocampista"},{"nombre":"Nombre real del jugador","equipo":"local","probabilidad_gol":18,"razon":"Razón específica","posicion":"Lateral"}],"contexto":{"forma_local":{"ultimos5":["W","W","D","L","W"],"tendencia":"Descripción de la tendencia reciente del equipo","factor_animo":"Positivo","nota_contextual":"Información relevante sobre el equipo: lesiones conocidas, cambios de entrenador, contexto de clasificación, estado del grupo, etc."},"forma_visitante":{"ultimos5":["W","D","W","W","L"],"tendencia":"Descripción de la tendencia reciente del equipo","factor_animo":"Neutro","nota_contextual":"Información relevante sobre el equipo: lesiones conocidas, cambios de entrenador, contexto de clasificación, estado del grupo, etc."},"historial_directo":{"partidos_totales":25,"victorias_local":10,"empates":8,"victorias_visitante":7,"tendencia_historica":"Descripción del historial y rivalidad entre estos dos equipos, incluyendo partidos memorables o tendencias importantes."}},"confianza":{"indice":72,"factores_incertidumbre":["Factor de incertidumbre específico 1","Factor de incertidumbre específico 2","Factor de incertidumbre específico 3"]}}
+
+Rellena TODOS los campos con información real, específica y fundamentada para ${local} vs ${visitor} en ${phase} del Mundial 2026. Los nombres de jugadores deben ser jugadores reales de cada selección.`;
+
+  try {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`;
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }] }],
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 2048,
+          responseMimeType: "application/json"
+        }
+      })
+    });
+
+    const data = await res.json();
+
+    if (data.error) throw new Error(data.error.message || 'Error de API');
+
+    const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const clean = rawText.replace(/```json|```/g, '').trim();
+    const json = JSON.parse(clean);
+
+    hideLoading();
+    document.getElementById('loading-view').className = 'loading';
+    renderResults(json, local, visitor, lf, vf, phase);
+
+  } catch (e) {
+    hideLoading();
+    document.getElementById('loading-view').className = 'loading';
+    document.getElementById('results-view').innerHTML = `
+      <div class="error-box">
+        ⚠️ Error al generar el análisis<br>
+        <small>${e.message}</small>
+        <small>Verifica tu API key de Gemini e inténtalo de nuevo.</small>
+      </div>
+      <button class="back-btn" onclick="resetApp()">← Volver al selector</button>`;
+    document.getElementById('results-view').className = 'results show';
+  }
+}
+
+/* ── RENDER RESULTS ── */
+function renderResults(d, local, visitor, lf, vf, phase) {
+  const p = d.prediccion;
+  const t = d.tactica;
+  const c = d.contexto;
+  const g = d.goleadores_probables || [];
+  const conf = d.confianza;
+
+  const formBadge = r => {
+    const cls = r === 'W' ? 'fw' : r === 'D' ? 'fd' : 'fl';
+    return `<div class="form-badge ${cls}">${r}</div>`;
+  };
+
+  const scorerTeamLabel = (equipo) =>
+    equipo === 'local' ? `${lf} ${local}` : `${vf} ${visitor}`;
+
+  const gaugeOffset = Math.round(220 - (220 * (conf?.indice || 0) / 100));
+
+  const html = `
+    <button class="back-btn" onclick="resetApp()">← Nuevo análisis</button>
+
+    <div class="match-header">
+      <div class="mh-phase">${phase} · Mundial 2026</div>
+      <span class="mh-team l">${lf} ${local}</span>
+      <span class="mh-vs">VS</span>
+      <span class="mh-team v">${vf} ${visitor}</span>
+    </div>
+
+    <!-- CARD A: PREDICCIÓN -->
+    <div class="card" id="c0">
+      <div class="card-title">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></svg>
+        Predicción de resultado
+      </div>
+      <div class="score-big">${p.marcador_probable}</div>
+      <div class="range-badge">${p.rango_goles}</div>
+      <div class="tipo-badge">${p.tipo_partido}</div>
+      <div class="prob-row">
+        <div class="prob-item">
+          <div class="prob-label">${lf} ${local}</div>
+          <div class="prob-val l">${p.probabilidad_local}%</div>
+        </div>
+        <div class="prob-item">
+          <div class="prob-label">Empate</div>
+          <div class="prob-val d">${p.probabilidad_empate}%</div>
+        </div>
+        <div class="prob-item">
+          <div class="prob-label">${vf} ${visitor}</div>
+          <div class="prob-val v">${p.probabilidad_visitante}%</div>
+        </div>
+      </div>
+      <div class="prob-bar-track" id="pbar">
+        <div class="pb pb-l" style="width:${p.probabilidad_local}%"></div>
+        <div class="pb pb-d" style="width:${p.probabilidad_empate}%"></div>
+        <div class="pb pb-v" style="width:${p.probabilidad_visitante}%"></div>
+      </div>
+      <div class="narrative">${p.resumen_narrativo}</div>
+    </div>
+
+    <!-- CARD B: TÁCTICA -->
+    <div class="card" id="c1">
+      <div class="card-title">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="2"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8"/><path d="M12 6v2m0 8v2"/></svg>
+        Análisis táctico
+      </div>
+      <div class="tactic-cols">
+        <div class="tactic-col">
+          <div class="tac-name l">${lf} ${local}</div>
+          <div class="tac-row"><span class="tac-k">Posesión</span><span class="tac-v">${t.local.posesion_estimada}%</span></div>
+          <div class="tac-row"><span class="tac-k">Línea def.</span><span class="tac-v">${t.local.linea_defensiva}</span></div>
+          <div class="tac-row"><span class="tac-k">Presión</span><span class="tac-v">${t.local.presion}</span></div>
+          <div class="tac-strength">
+            <div class="plus">+ ${t.local.fortaleza_clave}</div>
+            <div class="minus">− ${t.local.debilidad_clave}</div>
+          </div>
+        </div>
+        <div class="tactic-col">
+          <div class="tac-name v">${vf} ${visitor}</div>
+          <div class="tac-row"><span class="tac-k">Posesión</span><span class="tac-v">${t.visitante.posesion_estimada}%</span></div>
+          <div class="tac-row"><span class="tac-k">Línea def.</span><span class="tac-v">${t.visitante.linea_defensiva}</span></div>
+          <div class="tac-row"><span class="tac-k">Presión</span><span class="tac-v">${t.visitante.presion}</span></div>
+          <div class="tac-strength">
+            <div class="plus">+ ${t.visitante.fortaleza_clave}</div>
+            <div class="minus">− ${t.visitante.debilidad_clave}</div>
+          </div>
+        </div>
+      </div>
+      <div class="zone-box">
+        <div class="zone-lbl">Zona decisiva</div>
+        <div class="zone-txt">${t.zona_decisiva}</div>
+      </div>
+      <div style="height:8px"></div>
+      <div class="matchup-box">
+        <div class="matchup-lbl">Duelo clave</div>
+        <div class="matchup-txt">${t.matchup_clave}</div>
+      </div>
+    </div>
+
+    <!-- CARD C: GOLEADORES -->
+    <div class="card" id="c2">
+      <div class="card-title">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+        Goleadores probables
+      </div>
+      <div class="scorers">
+        ${g.map(s => `
+          <div class="scorer">
+            <div class="scorer-pct">${s.probabilidad_gol}%</div>
+            <div class="scorer-info">
+              <div class="scorer-name">${s.nombre}</div>
+              <div class="scorer-meta">${scorerTeamLabel(s.equipo)} · ${s.posicion}</div>
+              <div class="scorer-reason">${s.razon}</div>
+              <div class="scorer-bar-bg">
+                <div class="scorer-bar-fill" style="width:${Math.min(s.probabilidad_gol, 100)}%"></div>
+              </div>
+            </div>
+          </div>`).join('')}
+      </div>
+    </div>
+
+    <!-- CARD D: CONTEXTO -->
+    <div class="card" id="c3">
+      <div class="card-title">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        Estado de forma y contexto
+      </div>
+      <div class="context-cols">
+        <div class="ctx-col">
+          <div class="ctx-name l">${lf} ${local}</div>
+          <div class="form-row">${(c.forma_local.ultimos5 || []).map(formBadge).join('')}</div>
+          <span class="animo-badge animo-${c.forma_local.factor_animo}">${c.forma_local.factor_animo}</span>
+          <div class="ctx-trend">${c.forma_local.tendencia}</div>
+          <div class="ctx-note">${c.forma_local.nota_contextual}</div>
+        </div>
+        <div class="ctx-col">
+          <div class="ctx-name v">${vf} ${visitor}</div>
+          <div class="form-row">${(c.forma_visitante.ultimos5 || []).map(formBadge).join('')}</div>
+          <span class="animo-badge animo-${c.forma_visitante.factor_animo}">${c.forma_visitante.factor_animo}</span>
+          <div class="ctx-trend">${c.forma_visitante.tendencia}</div>
+          <div class="ctx-note">${c.forma_visitante.nota_contextual}</div>
+        </div>
+      </div>
+      <div class="history-box">
+        <div class="sec-label" style="margin-bottom:10px">Historial directo</div>
+        <div class="history-stats">
+          <div><div class="h-num">${c.historial_directo.partidos_totales}</div><div class="h-lbl">Total</div></div>
+          <div><div class="h-num" style="color:var(--cyan)">${c.historial_directo.victorias_local}</div><div class="h-lbl">${local}</div></div>
+          <div><div class="h-num" style="color:var(--muted)">${c.historial_directo.empates}</div><div class="h-lbl">Empates</div></div>
+          <div><div class="h-num" style="color:var(--gold)">${c.historial_directo.victorias_visitante}</div><div class="h-lbl">${visitor}</div></div>
+        </div>
+        <div class="history-trend">${c.historial_directo.tendencia_historica}</div>
+      </div>
+    </div>
+
+    <!-- CARD E: CONFIANZA -->
+    <div class="card" id="c4">
+      <div class="card-title">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        Índice de confianza del modelo
+      </div>
+      <div class="conf-wrap">
+        <svg class="gauge-svg" viewBox="0 0 180 100" aria-hidden="true">
+          <path d="M18,90 A72,72 0 0,1 162,90" fill="none" stroke="#1a3a5c" stroke-width="12" stroke-linecap="round"/>
+          <path d="M18,90 A72,72 0 0,1 162,90" fill="none" stroke="#00D4FF" stroke-width="12" stroke-linecap="round"
+            stroke-dasharray="226" stroke-dashoffset="${Math.round(226 - (226 * (conf?.indice || 0) / 100))}"
+            id="gauge-arc" style="transition: stroke-dashoffset 1.5s ease;"/>
+          <text x="90" y="86" text-anchor="middle" font-family="Rajdhani,sans-serif" font-size="28" font-weight="700" fill="#00D4FF">${conf?.indice || 0}%</text>
+        </svg>
+        <div class="conf-lbl">Confianza del modelo en esta predicción</div>
+        <div class="uncertainty">
+          ${(conf?.factores_incertidumbre || []).map(f => `
+            <div class="unc-item">
+              <span class="unc-icon">⚠</span>${f}
+            </div>`).join('')}
+        </div>
+      </div>
+    </div>
+
+    <button class="back-btn" onclick="resetApp()" style="width:100%;justify-content:center;padding:14px">
+      ← Analizar otro partido
+    </button>`;
+
+  const rv = document.getElementById('results-view');
+  rv.innerHTML = html;
+  rv.className = 'results show';
+
+  for (let i = 0; i < 5; i++) {
+    setTimeout(() => {
+      const card = document.getElementById('c' + i);
+      if (card) card.classList.add('visible');
+    }, i * 150);
+  }
+}
+
+/* ── RESET ── */
+function resetApp() {
+  document.getElementById('results-view').innerHTML = '';
+  document.getElementById('results-view').className = 'results';
+  document.getElementById('loading-view').className = 'loading';
+  document.getElementById('selector-view').style.display = 'block';
+  window.scrollTo(0, 0);
+}
+</script>
+</body>
+</html>
