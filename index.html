@@ -132,6 +132,46 @@
   }
   .gemini-link span { color: var(--muted); }
 
+  /* ── TOGGLE BÚSQUEDA EN VIVO ── */
+  .search-toggle {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 18px;
+  }
+  .search-toggle-info { flex: 1; min-width: 0; }
+  .search-toggle-title { font-size: 13px; font-weight: 500; color: var(--text); }
+  .search-toggle-desc { font-size: 11px; color: var(--muted); margin-top: 2px; line-height: 1.4; }
+  .switch {
+    position: relative;
+    width: 44px; height: 24px;
+    flex-shrink: 0;
+    cursor: pointer;
+  }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .switch-slider {
+    position: absolute;
+    inset: 0;
+    background: #2a4a6a;
+    border-radius: 24px;
+    transition: background 0.2s;
+  }
+  .switch-slider::before {
+    content: '';
+    position: absolute;
+    width: 18px; height: 18px;
+    left: 3px; top: 3px;
+    background: #fff;
+    border-radius: 50%;
+    transition: transform 0.2s;
+  }
+  .switch input:checked + .switch-slider { background: var(--cyan); }
+  .switch input:checked + .switch-slider::before { transform: translateX(20px); }
+
   /* ── TEAM SELECTORS ── */
   .vs-row {
     display: grid;
@@ -782,6 +822,18 @@
       🔑 Obtener API key gratuita en aistudio.google.com <span>(es gratis, sin tarjeta)</span>
     </a>
 
+    <!-- TOGGLE BÚSQUEDA EN VIVO -->
+    <div class="search-toggle">
+      <div class="search-toggle-info">
+        <div class="search-toggle-title">🌐 Búsqueda en vivo</div>
+        <div class="search-toggle-desc">Activa para datos reales de convocatorias y noticias (gasta más cuota). Desactiva para ahorrar consultas.</div>
+      </div>
+      <label class="switch">
+        <input type="checkbox" id="search-switch" checked onchange="toggleSearch()">
+        <span class="switch-slider"></span>
+      </label>
+    </div>
+
     <!-- PESTAÑAS -->
     <div class="tabs">
       <button class="tab active" id="tab-calendar" onclick="switchTab('calendar')">📅 Calendario</button>
@@ -1074,6 +1126,21 @@ function switchTab(tab) {
   document.getElementById('manual-tab').style.display = isCal ? 'none' : 'block';
 }
 
+/* ── BÚSQUEDA EN VIVO (toggle) ── */
+let useSearch = true;
+function toggleSearch() {
+  useSearch = document.getElementById('search-switch').checked;
+  try { localStorage.setItem('mw_search', useSearch ? '1' : '0'); } catch (e) {}
+}
+/* Restaurar estado guardado */
+try {
+  const savedSearch = localStorage.getItem('mw_search');
+  if (savedSearch === '0') {
+    useSearch = false;
+    document.getElementById('search-switch').checked = false;
+  }
+} catch (e) {}
+
 /* Inicializar calendario al cargar */
 renderGroupFilter();
 renderMatches();
@@ -1165,11 +1232,15 @@ async function startAnalysis() {
   document.getElementById('loading-view').className = 'loading show';
   showLoading();
 
+  const searchInstruction = useSearch
+    ? `IMPORTANTE — USA BÚSQUEDA EN INTERNET: Antes de responder, busca en internet las CONVOCATORIAS OFICIALES Y DEFINITIVAS de 26 jugadores de ambas selecciones para el Mundial 2026 (las federaciones las confirmaron a la FIFA el 1-2 de junio de 2026). SOLO menciona como posibles goleadores a jugadores que estén REALMENTE convocados en la lista oficial actual de cada selección. No incluyas jugadores lesionados, no convocados o retirados. Busca también noticias recientes sobre lesiones, estado de forma actual, y cualquier novedad de última hora de ambos equipos. Basa tu análisis en esta información real y actualizada, no solo en tu memoria.`
+    : `Usa tu conocimiento sobre las plantillas de ambas selecciones para el Mundial 2026. Menciona como posibles goleadores solo a jugadores que sean realistas y habituales en cada selección. Evita jugadores que sepas que están retirados de la selección.`;
+
   const prompt = `Eres el analista deportivo y científico de datos más prestigioso del mundo del fútbol, al nivel de los equipos de modelización de Opta, StatsBomb y los departamentos de análisis de las grandes federaciones. Combinas conocimiento táctico profundo, dominio de métricas avanzadas (xG, xGA, PPDA, progresión de balón, presión, transiciones) y un razonamiento probabilístico riguroso de big data.
 
 Antes de dar tu predicción, razona internamente como un modelo predictivo serio: pondera la calidad de las plantillas, el estilo de juego y cómo encajan tácticamente ambos equipos, la forma reciente, el historial directo, la importancia y presión de la fase del torneo, las bajas y lesiones conocidas, y el factor localía/altitud/clima en las sedes de Norteamérica. Tus probabilidades deben sumar coherentemente y reflejar incertidumbre realista: evita predicciones excesivamente confiadas salvo que haya una diferencia de nivel objetiva y clara. Sé específico, cita jugadores reales y fundamenta cada afirmación.
 
-IMPORTANTE — USA BÚSQUEDA EN INTERNET: Antes de responder, busca en internet las CONVOCATORIAS OFICIALES Y DEFINITIVAS de 26 jugadores de ambas selecciones para el Mundial 2026 (las federaciones las confirmaron a la FIFA el 1-2 de junio de 2026). SOLO menciona como posibles goleadores a jugadores que estén REALMENTE convocados en la lista oficial actual de cada selección. No incluyas jugadores lesionados, no convocados o retirados. Busca también noticias recientes sobre lesiones, estado de forma actual, y cualquier novedad de última hora de ambos equipos. Basa tu análisis en esta información real y actualizada, no solo en tu memoria.
+${searchInstruction}
 
 Tienes conocimiento exhaustivo sobre todas las selecciones nacionales del mundo: sus estilos de juego, jugadores clave, historial de partidos, estadísticas, formas recientes, entrenadores, y contexto actual hasta 2026.
 
@@ -1185,18 +1256,21 @@ Devuelve exactamente este JSON completado con datos reales y específicos para e
 Rellena TODOS los campos con información real, específica y fundamentada para ${local} vs ${visitor} en ${phase} del Mundial 2026. Los nombres de jugadores deben ser jugadores reales de cada selección.`;
 
   try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent?key=${key}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`;
+    const reqBody = {
+      contents: [{ parts: [{ text: prompt }] }],
+      generationConfig: {
+        temperature: 0.85,
+        maxOutputTokens: 4096
+      }
+    };
+    if (useSearch) {
+      reqBody.tools = [{ google_search: {} }];
+    }
     const res = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        tools: [{ google_search: {} }],
-        generationConfig: {
-          temperature: 0.85,
-          maxOutputTokens: 4096
-        }
-      })
+      body: JSON.stringify(reqBody)
     });
 
     const data = await res.json();
