@@ -1308,53 +1308,53 @@ function extractFirstJSONObject(text) {
 }
 
 function parseLooseJSON(text) {
-  // Primero recortamos cualquier texto extra antes/después del objeto JSON
+  // Recortamos cualquier texto extra antes/después del objeto JSON
   text = extractFirstJSONObject(text);
 
   // Intento 1: directo
   try { return JSON.parse(text); } catch (e) {}
 
-  let t = text;
-  // Quitar comas finales antes de } o ]
-  t = t.replace(/,(\s*[}\]])/g, '$1');
-  // Reemplazar saltos de línea reales dentro del texto por espacios
-  t = t.replace(/\r/g, ' ');
-  // Intento 2: con comas finales corregidas
+  // Intento 2: limpiar comas finales y retornos de carro
+  let t = text.replace(/,(\s*[}\]])/g, '$1').replace(/\r/g, ' ');
   try { return JSON.parse(t); } catch (e) {}
 
-  // Intento 3: escapar comillas dobles que aparezcan dentro de valores de texto.
-  // Recorre el JSON y escapa comillas que no sean delimitadores estructurales.
+  // Intento 3: sanitización profunda en una sola pasada.
+  // Recorre carácter a carácter distinguiendo si estamos dentro de un string,
+  // y arregla a la vez: comillas internas sin escapar, saltos de línea/tabs
+  // dentro de strings, y comas finales.
   try {
-    let result = '';
+    let out = '';
     let inString = false;
     for (let i = 0; i < t.length; i++) {
       const ch = t[i];
-      const next = t[i + 1];
       if (ch === '"') {
-        if (!inString) { inString = true; result += ch; }
-        else {
-          // ¿es el cierre legítimo? Lo es si lo siguiente (ignorando espacios)
-          // es uno de : , } ]
+        if (!inString) {
+          inString = true; out += ch;
+        } else {
+          // Mirar el siguiente carácter no-espacio: si es estructural, cierra string
           let j = i + 1;
-          while (j < t.length && (t[j] === ' ' || t[j] === '\n' || t[j] === '\t')) j++;
+          while (j < t.length && /\s/.test(t[j])) j++;
           const after = t[j];
           if (after === ':' || after === ',' || after === '}' || after === ']' || j >= t.length) {
-            inString = false; result += ch;
+            inString = false; out += ch;
           } else {
-            result += '\\"'; // comilla interna: la escapamos
+            out += '\\"'; // comilla interna real: escapar
           }
         }
-      } else if (ch === '\n' && inString) {
-        result += ' '; // salto de línea dentro de string
+      } else if (inString && (ch === '\n' || ch === '\t')) {
+        out += ' '; // saltos/tabs dentro de string → espacio
+      } else if (inString && ch === '\\' && t[i + 1] !== '"' && t[i + 1] !== '\\' && t[i + 1] !== '/' && t[i + 1] !== 'n' && t[i + 1] !== 't' && t[i + 1] !== 'r' && t[i + 1] !== 'u' && t[i + 1] !== 'b' && t[i + 1] !== 'f') {
+        out += '\\\\'; // backslash suelto inválido → escapar
       } else {
-        result += ch;
+        out += ch;
       }
     }
-    return JSON.parse(extractFirstJSONObject(result));
+    out = out.replace(/,(\s*[}\]])/g, '$1');
+    return JSON.parse(extractFirstJSONObject(out));
   } catch (e) {}
 
-  // Si todo falla, lanzamos error claro
-  throw new Error('El modelo devolvió un formato no válido. Inténtalo de nuevo.');
+  // Si todo falla, error claro (la app reintentará automáticamente)
+  throw new Error('FORMATO_INVALIDO');
 }
 
 /* ── MAIN ANALYSIS ── */
@@ -1419,80 +1419,113 @@ Devuelve exactamente este JSON completado con datos reales y específicos para e
 
 Rellena TODOS los campos con información real, específica y fundamentada para ${local} vs ${visitor} en ${phase} del Mundial 2026. Los nombres de jugadores deben ser jugadores reales de cada selección.
 
-REGLAS DE FORMATO CRÍTICAS: Devuelve JSON estrictamente válido. NO uses comillas dobles (") dentro de los textos; si necesitas destacar algo usa comillas simples ('). NO uses saltos de línea dentro de los valores de texto. NO añadas comas finales. NO incluyas ningún texto fuera del objeto JSON.`;
+REGLAS DE FORMATO CRÍTICAS: Devuelve JSON estrictamente válido. NO uses comillas dobles (") dentro de los textos; si necesitas destacar algo usa comillas simples ('). NO uses saltos de línea dentro de los valores de texto. NO añadas comas finales. NO incluyas ningún texto fuera del objeto JSON.
+
+REGLA DE HONESTIDAD SOBRE LA CONFIANZA: El fútbol es altamente impredecible. El "indice" de confianza debe ser REALISTA y CALIBRADO, nunca inflado. Úsalo así: 30-45 si los equipos están muy igualados o hay mucha incertidumbre; 45-60 cuando hay un favorito moderado; 60-72 solo cuando hay una diferencia de nivel clara y objetiva. NUNCA superes 75, porque ni los mejores modelos del mundo aciertan resultados de fútbol con más fiabilidad. El marcador es el escenario MÁS probable, no una certeza. Las probabilidades de victoria/empate/derrota deben sumar exactamente 100.`;
+
+  // Mostrar un mensaje de error con consejo según el tipo
+  const showError = (e) => {
+    hideLoading();
+    document.getElementById('loading-view').className = 'loading';
+    const msg = (e.message || '').toLowerCase();
+    let hint, detail = e.message;
+    if (msg.includes('quota') || msg.includes('rate') || msg.includes('429') || msg.includes('exceeded')) {
+      hint = 'Has alcanzado el límite de tu cuota gratuita de Gemini. Espera unos minutos o hasta mañana, o desactiva la búsqueda en vivo para gastar menos.';
+    } else if (msg.includes('api key') || msg.includes('api_key') || msg.includes('permission') || msg.includes('invalid') || msg.includes('401') || msg.includes('403')) {
+      hint = 'Revisa que tu API key de Gemini sea correcta y esté activa.';
+    } else if (msg.includes('formato_invalido') || msg.includes('formato') || msg.includes('json') || msg.includes('cortó') || msg.includes('vacía')) {
+      hint = 'El modelo devolvió una respuesta irregular incluso tras reintentar. Prueba a desactivar la búsqueda en vivo, o inténtalo de nuevo en unos segundos.';
+      detail = 'Respuesta con formato irregular';
+    } else if (msg.includes('failed to fetch') || msg.includes('network')) {
+      hint = 'Problema de conexión. Comprueba tu internet e inténtalo de nuevo.';
+    } else {
+      hint = 'Inténtalo de nuevo en unos segundos.';
+    }
+    document.getElementById('results-view').innerHTML = `
+      <div class="error-box">
+        ⚠️ Error al generar el análisis<br>
+        <small>${detail}</small>
+        <small>${hint}</small>
+      </div>
+      <button class="back-btn" onclick="resetApp()">← Volver al selector</button>`;
+    document.getElementById('results-view').className = 'results show';
+  };
 
   try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`;
-    const reqBody = {
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: {
-        temperature: 0.85,
-        maxOutputTokens: 8192
+    // Intento 1: con la configuración elegida por el usuario
+    let json;
+    try {
+      json = await callGemini(prompt, useSearch, key);
+    } catch (firstErr) {
+      // Si el fallo fue de formato/longitud (no de cuota ni de clave),
+      // reintentamos UNA vez sin búsqueda (más fiable para generar JSON limpio).
+      const m = (firstErr.message || '').toLowerCase();
+      const isFormatError = m.includes('formato_invalido') || m.includes('cortó') || m.includes('vacía');
+      const isQuotaOrKey = m.includes('quota') || m.includes('429') || m.includes('api key') || m.includes('403') || m.includes('401');
+      if (isFormatError && !isQuotaOrKey) {
+        document.getElementById('loading-text').textContent = 'Reintentando con formato limpio...';
+        json = await callGemini(prompt, false, key); // segundo intento sin búsqueda
+      } else {
+        throw firstErr;
       }
-    };
-    if (useSearch) {
-      reqBody.tools = [{ google_search: {} }];
-    }
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(reqBody)
-    });
-
-    const data = await res.json();
-
-    if (data.error) throw new Error(data.error.message || 'Error de API');
-
-    const parts = data.candidates?.[0]?.content?.parts || [];
-    const rawText = parts.map(p => p.text || '').join('');
-    if (!rawText) throw new Error('Respuesta vacía del modelo');
-
-    // Si el modelo se quedó sin espacio, el JSON viene cortado
-    const finish = data.candidates?.[0]?.finishReason;
-    if (finish === 'MAX_TOKENS' && rawText.lastIndexOf('}') < rawText.length - 50) {
-      throw new Error('La respuesta se cortó por longitud. Vuelve a intentarlo.');
     }
 
-    const json = parseLooseJSON(rawText);
-
-    // Solo cacheamos si el análisis tiene contenido mínimo útil
-    const isValid = json && json.prediccion && json.prediccion.marcador_probable;
-    if (isValid) {
-      try { localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), data: json })); } catch (e) { /* caché llena, ignoramos */ }
+    // Validamos contenido mínimo
+    if (!json || !json.prediccion || !json.prediccion.marcador_probable) {
+      throw new Error('FORMATO_INVALIDO');
     }
+
+    // Cacheamos solo análisis válidos
+    try { localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), data: json })); } catch (e) {}
 
     hideLoading();
     document.getElementById('loading-view').className = 'loading';
     renderResults(json, local, visitor, lf, vf, phase, false);
 
   } catch (e) {
-    hideLoading();
-    document.getElementById('loading-view').className = 'loading';
-
-    // Mensaje de ayuda adaptado al tipo de error
-    const msg = (e.message || '').toLowerCase();
-    let hint;
-    if (msg.includes('quota') || msg.includes('rate') || msg.includes('429') || msg.includes('exceeded')) {
-      hint = 'Has alcanzado el límite de tu cuota gratuita de Gemini. Espera unos minutos o hasta mañana, o desactiva la búsqueda en vivo para gastar menos.';
-    } else if (msg.includes('api key') || msg.includes('api_key') || msg.includes('permission') || msg.includes('invalid') || msg.includes('401') || msg.includes('403')) {
-      hint = 'Revisa que tu API key de Gemini sea correcta y esté activa.';
-    } else if (msg.includes('formato') || msg.includes('json')) {
-      hint = 'El modelo devolvió una respuesta con formato irregular. Vuelve a intentarlo: suele funcionar al segundo intento.';
-    } else if (msg.includes('failed to fetch') || msg.includes('network')) {
-      hint = 'Problema de conexión. Comprueba tu internet e inténtalo de nuevo.';
-    } else {
-      hint = 'Inténtalo de nuevo en unos segundos.';
-    }
-
-    document.getElementById('results-view').innerHTML = `
-      <div class="error-box">
-        ⚠️ Error al generar el análisis<br>
-        <small>${e.message}</small>
-        <small>${hint}</small>
-      </div>
-      <button class="back-btn" onclick="resetApp()">← Volver al selector</button>`;
-    document.getElementById('results-view').className = 'results show';
+    showError(e);
   }
+}
+
+/* ── LLAMADA A GEMINI ──
+   Hace una petición y devuelve el JSON parseado, o lanza un error claro.
+   withSearch: si true, activa la búsqueda en vivo (grounding). */
+async function callGemini(prompt, withSearch, key) {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`;
+  const reqBody = {
+    contents: [{ parts: [{ text: prompt }] }],
+    generationConfig: {
+      temperature: 0.7,
+      maxOutputTokens: 8192
+    }
+  };
+  if (withSearch) {
+    // Con búsqueda no se puede forzar responseMimeType, confiamos en el prompt
+    reqBody.tools = [{ google_search: {} }];
+  } else {
+    // Sin búsqueda: forzamos salida JSON nativa (mucho más fiable)
+    reqBody.generationConfig.responseMimeType = 'application/json';
+  }
+
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(reqBody)
+  });
+  const data = await res.json();
+
+  if (data.error) throw new Error(data.error.message || 'Error de API');
+
+  const cand = data.candidates?.[0];
+  const parts = cand?.content?.parts || [];
+  const rawText = parts.map(p => p.text || '').join('');
+  if (!rawText) throw new Error('Respuesta vacía del modelo');
+
+  if (cand?.finishReason === 'MAX_TOKENS' && rawText.lastIndexOf('}') < rawText.length - 50) {
+    throw new Error('La respuesta se cortó por longitud');
+  }
+
+  return parseLooseJSON(rawText);
 }
 
 /* ── RENDER RESULTS ── */
