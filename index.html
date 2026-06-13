@@ -1193,6 +1193,57 @@ function showLoading() {
 }
 function hideLoading() { clearInterval(loadInterval); }
 
+/* ── PARSEO ROBUSTO DE JSON ──
+   Intenta parsear normal; si falla, aplica reparaciones habituales que
+   suele cometer el modelo (comas finales, comillas sin escapar dentro de
+   valores, saltos de línea dentro de strings). */
+function parseLooseJSON(text) {
+  // Intento 1: directo
+  try { return JSON.parse(text); } catch (e) {}
+
+  let t = text;
+  // Quitar comas finales antes de } o ]
+  t = t.replace(/,(\s*[}\]])/g, '$1');
+  // Reemplazar saltos de línea reales dentro del texto por espacios
+  t = t.replace(/\r/g, ' ');
+  // Intento 2: con comas finales corregidas
+  try { return JSON.parse(t); } catch (e) {}
+
+  // Intento 3: escapar comillas dobles que aparezcan dentro de valores de texto.
+  // Recorre el JSON y escapa comillas que no sean delimitadores estructurales.
+  try {
+    let result = '';
+    let inString = false;
+    for (let i = 0; i < t.length; i++) {
+      const ch = t[i];
+      const next = t[i + 1];
+      if (ch === '"') {
+        if (!inString) { inString = true; result += ch; }
+        else {
+          // ¿es el cierre legítimo? Lo es si lo siguiente (ignorando espacios)
+          // es uno de : , } ]
+          let j = i + 1;
+          while (j < t.length && (t[j] === ' ' || t[j] === '\n' || t[j] === '\t')) j++;
+          const after = t[j];
+          if (after === ':' || after === ',' || after === '}' || after === ']' || j >= t.length) {
+            inString = false; result += ch;
+          } else {
+            result += '\\"'; // comilla interna: la escapamos
+          }
+        }
+      } else if (ch === '\n' && inString) {
+        result += ' '; // salto de línea dentro de string
+      } else {
+        result += ch;
+      }
+    }
+    return JSON.parse(result);
+  } catch (e) {}
+
+  // Si todo falla, lanzamos error claro
+  throw new Error('El modelo devolvió un formato no válido. Inténtalo de nuevo.');
+}
+
 /* ── MAIN ANALYSIS ── */
 async function startAnalysis() {
   const local = selLocal.value;
@@ -1253,7 +1304,9 @@ Devuelve exactamente este JSON completado con datos reales y específicos para e
 
 {"prediccion":{"marcador_probable":"2-1","probabilidad_local":55,"probabilidad_empate":22,"probabilidad_visitante":23,"rango_goles":"entre 2 y 4 goles","tipo_partido":"Favorito claro","resumen_narrativo":"Escribe aquí 3-4 frases de análisis narrativo detallado como analista experto, explicando cómo se espera que se desarrolle el partido, qué factores son determinantes y qué estilos entran en conflicto."},"tactica":{"local":{"estilo":"descripción concreta del estilo de juego en 1 frase","posesion_estimada":55,"linea_defensiva":"Alta","presion":"Intensa","fortaleza_clave":"Fortaleza táctica específica del equipo","debilidad_clave":"Debilidad táctica específica del equipo"},"visitante":{"estilo":"descripción concreta del estilo de juego en 1 frase","posesion_estimada":45,"linea_defensiva":"Media","presion":"Moderada","fortaleza_clave":"Fortaleza táctica específica del equipo","debilidad_clave":"Debilidad táctica específica del equipo"},"zona_decisiva":"Descripción de dónde se decidirá el partido tácticamente","matchup_clave":"Descripción del duelo individual más determinante del partido"},"goleadores_probables":[{"nombre":"Nombre real del jugador","equipo":"local","probabilidad_gol":45,"razon":"Razón específica basada en estadísticas o contexto real","posicion":"Delantero"},{"nombre":"Nombre real del jugador","equipo":"visitante","probabilidad_gol":38,"razon":"Razón específica basada en estadísticas o contexto real","posicion":"Delantero"},{"nombre":"Nombre real del jugador","equipo":"local","probabilidad_gol":28,"razon":"Razón específica","posicion":"Mediapunta"},{"nombre":"Nombre real del jugador","equipo":"visitante","probabilidad_gol":22,"razon":"Razón específica","posicion":"Centrocampista"},{"nombre":"Nombre real del jugador","equipo":"local","probabilidad_gol":18,"razon":"Razón específica","posicion":"Lateral"}],"contexto":{"forma_local":{"ultimos5":["W","W","D","L","W"],"tendencia":"Descripción de la tendencia reciente del equipo","factor_animo":"Positivo","nota_contextual":"Información relevante sobre el equipo: lesiones conocidas, cambios de entrenador, contexto de clasificación, estado del grupo, etc."},"forma_visitante":{"ultimos5":["W","D","W","W","L"],"tendencia":"Descripción de la tendencia reciente del equipo","factor_animo":"Neutro","nota_contextual":"Información relevante sobre el equipo: lesiones conocidas, cambios de entrenador, contexto de clasificación, estado del grupo, etc."},"historial_directo":{"partidos_totales":25,"victorias_local":10,"empates":8,"victorias_visitante":7,"tendencia_historica":"Descripción del historial y rivalidad entre estos dos equipos, incluyendo partidos memorables o tendencias importantes."}},"confianza":{"indice":72,"factores_incertidumbre":["Factor de incertidumbre específico 1","Factor de incertidumbre específico 2","Factor de incertidumbre específico 3"]}}
 
-Rellena TODOS los campos con información real, específica y fundamentada para ${local} vs ${visitor} en ${phase} del Mundial 2026. Los nombres de jugadores deben ser jugadores reales de cada selección.`;
+Rellena TODOS los campos con información real, específica y fundamentada para ${local} vs ${visitor} en ${phase} del Mundial 2026. Los nombres de jugadores deben ser jugadores reales de cada selección.
+
+REGLAS DE FORMATO CRÍTICAS: Devuelve JSON estrictamente válido. NO uses comillas dobles (") dentro de los textos; si necesitas destacar algo usa comillas simples ('). NO uses saltos de línea dentro de los valores de texto. NO añadas comas finales. NO incluyas ningún texto fuera del objeto JSON.`;
 
   try {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`;
@@ -1285,7 +1338,8 @@ Rellena TODOS los campos con información real, específica y fundamentada para 
     const lastBrace = rawText.lastIndexOf('}');
     if (firstBrace === -1 || lastBrace === -1) throw new Error('No se encontró JSON en la respuesta');
     const clean = rawText.substring(firstBrace, lastBrace + 1);
-    const json = JSON.parse(clean);
+
+    const json = parseLooseJSON(clean);
 
     try { localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), data: json })); } catch (e) { /* caché llena, ignoramos */ }
 
