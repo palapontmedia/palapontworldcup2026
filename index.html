@@ -1194,10 +1194,35 @@ function showLoading() {
 function hideLoading() { clearInterval(loadInterval); }
 
 /* ── PARSEO ROBUSTO DE JSON ──
-   Intenta parsear normal; si falla, aplica reparaciones habituales que
-   suele cometer el modelo (comas finales, comillas sin escapar dentro de
-   valores, saltos de línea dentro de strings). */
+   Extrae el primer objeto JSON completo (contando llaves balanceadas, ignorando
+   las que están dentro de strings) y luego intenta parsearlo, aplicando
+   reparaciones habituales si hace falta (comas finales, comillas sin escapar,
+   saltos de línea, o texto extra después del objeto como citas de fuentes). */
+function extractFirstJSONObject(text) {
+  const start = text.indexOf('{');
+  if (start === -1) return text;
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+  for (let i = start; i < text.length; i++) {
+    const ch = text[i];
+    if (escaped) { escaped = false; continue; }
+    if (ch === '\\') { escaped = true; continue; }
+    if (ch === '"') { inString = !inString; continue; }
+    if (inString) continue;
+    if (ch === '{') depth++;
+    else if (ch === '}') {
+      depth--;
+      if (depth === 0) return text.substring(start, i + 1); // objeto completo
+    }
+  }
+  return text.substring(start); // no se cerró del todo: devolvemos lo que hay
+}
+
 function parseLooseJSON(text) {
+  // Primero recortamos cualquier texto extra antes/después del objeto JSON
+  text = extractFirstJSONObject(text);
+
   // Intento 1: directo
   try { return JSON.parse(text); } catch (e) {}
 
@@ -1237,7 +1262,7 @@ function parseLooseJSON(text) {
         result += ch;
       }
     }
-    return JSON.parse(result);
+    return JSON.parse(extractFirstJSONObject(result));
   } catch (e) {}
 
   // Si todo falla, lanzamos error claro
@@ -1314,7 +1339,7 @@ REGLAS DE FORMATO CRÍTICAS: Devuelve JSON estrictamente válido. NO uses comill
       contents: [{ parts: [{ text: prompt }] }],
       generationConfig: {
         temperature: 0.85,
-        maxOutputTokens: 4096
+        maxOutputTokens: 8192
       }
     };
     if (useSearch) {
@@ -1334,14 +1359,19 @@ REGLAS DE FORMATO CRÍTICAS: Devuelve JSON estrictamente válido. NO uses comill
     const rawText = parts.map(p => p.text || '').join('');
     if (!rawText) throw new Error('Respuesta vacía del modelo');
 
-    const firstBrace = rawText.indexOf('{');
-    const lastBrace = rawText.lastIndexOf('}');
-    if (firstBrace === -1 || lastBrace === -1) throw new Error('No se encontró JSON en la respuesta');
-    const clean = rawText.substring(firstBrace, lastBrace + 1);
+    // Si el modelo se quedó sin espacio, el JSON viene cortado
+    const finish = data.candidates?.[0]?.finishReason;
+    if (finish === 'MAX_TOKENS' && rawText.lastIndexOf('}') < rawText.length - 50) {
+      throw new Error('La respuesta se cortó por longitud. Vuelve a intentarlo.');
+    }
 
-    const json = parseLooseJSON(clean);
+    const json = parseLooseJSON(rawText);
 
-    try { localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), data: json })); } catch (e) { /* caché llena, ignoramos */ }
+    // Solo cacheamos si el análisis tiene contenido mínimo útil
+    const isValid = json && json.prediccion && json.prediccion.marcador_probable;
+    if (isValid) {
+      try { localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), data: json })); } catch (e) { /* caché llena, ignoramos */ }
+    }
 
     hideLoading();
     document.getElementById('loading-view').className = 'loading';
@@ -1350,11 +1380,27 @@ REGLAS DE FORMATO CRÍTICAS: Devuelve JSON estrictamente válido. NO uses comill
   } catch (e) {
     hideLoading();
     document.getElementById('loading-view').className = 'loading';
+
+    // Mensaje de ayuda adaptado al tipo de error
+    const msg = (e.message || '').toLowerCase();
+    let hint;
+    if (msg.includes('quota') || msg.includes('rate') || msg.includes('429') || msg.includes('exceeded')) {
+      hint = 'Has alcanzado el límite de tu cuota gratuita de Gemini. Espera unos minutos o hasta mañana, o desactiva la búsqueda en vivo para gastar menos.';
+    } else if (msg.includes('api key') || msg.includes('api_key') || msg.includes('permission') || msg.includes('invalid') || msg.includes('401') || msg.includes('403')) {
+      hint = 'Revisa que tu API key de Gemini sea correcta y esté activa.';
+    } else if (msg.includes('formato') || msg.includes('json')) {
+      hint = 'El modelo devolvió una respuesta con formato irregular. Vuelve a intentarlo: suele funcionar al segundo intento.';
+    } else if (msg.includes('failed to fetch') || msg.includes('network')) {
+      hint = 'Problema de conexión. Comprueba tu internet e inténtalo de nuevo.';
+    } else {
+      hint = 'Inténtalo de nuevo en unos segundos.';
+    }
+
     document.getElementById('results-view').innerHTML = `
       <div class="error-box">
         ⚠️ Error al generar el análisis<br>
         <small>${e.message}</small>
-        <small>Verifica tu API key de Gemini e inténtalo de nuevo.</small>
+        <small>${hint}</small>
       </div>
       <button class="back-btn" onclick="resetApp()">← Volver al selector</button>`;
     document.getElementById('results-view').className = 'results show';
@@ -1363,11 +1409,38 @@ REGLAS DE FORMATO CRÍTICAS: Devuelve JSON estrictamente válido. NO uses comill
 
 /* ── RENDER RESULTS ── */
 function renderResults(d, local, visitor, lf, vf, phase, fromCache) {
-  const p = d.prediccion;
-  const t = d.tactica;
-  const c = d.contexto;
-  const g = d.goleadores_probables || [];
-  const conf = d.confianza;
+  d = d || {};
+  // Valores por defecto seguros: si el modelo omite algún campo, no se rompe.
+  const ND = '—'; // "no disponible"
+  const p = Object.assign({
+    marcador_probable: ND, probabilidad_local: 0, probabilidad_empate: 0,
+    probabilidad_visitante: 0, rango_goles: ND, tipo_partido: ND,
+    resumen_narrativo: 'Análisis no disponible para este partido.'
+  }, d.prediccion || {});
+
+  const tLado = () => ({
+    estilo: ND, posesion_estimada: 0, linea_defensiva: ND, presion: ND,
+    fortaleza_clave: ND, debilidad_clave: ND
+  });
+  const t = d.tactica || {};
+  t.local = Object.assign(tLado(), t.local || {});
+  t.visitante = Object.assign(tLado(), t.visitante || {});
+  t.zona_decisiva = t.zona_decisiva || ND;
+  t.matchup_clave = t.matchup_clave || ND;
+
+  const formaDef = () => ({
+    ultimos5: [], tendencia: ND, factor_animo: 'Neutro', nota_contextual: ND
+  });
+  const c = d.contexto || {};
+  c.forma_local = Object.assign(formaDef(), c.forma_local || {});
+  c.forma_visitante = Object.assign(formaDef(), c.forma_visitante || {});
+  c.historial_directo = Object.assign({
+    partidos_totales: 0, victorias_local: 0, empates: 0,
+    victorias_visitante: 0, tendencia_historica: ND
+  }, c.historial_directo || {});
+
+  const g = Array.isArray(d.goleadores_probables) ? d.goleadores_probables : [];
+  const conf = Object.assign({ indice: 0, factores_incertidumbre: [] }, d.confianza || {});
 
   const formBadge = r => {
     const cls = r === 'W' ? 'fw' : r === 'D' ? 'fd' : 'fl';
