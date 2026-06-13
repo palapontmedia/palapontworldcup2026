@@ -739,14 +739,14 @@ apiInput.addEventListener('input', () => {
   if (validateKey(k)) {
     apiBadge.textContent = 'Clave lista';
     apiBadge.className = 'api-badge ok';
-    sessionStorage.setItem('gm_key', k);
+    localStorage.setItem('gm_key', k);
   } else {
     apiBadge.textContent = 'Sin clave';
     apiBadge.className = 'api-badge no';
   }
 });
 
-const saved = sessionStorage.getItem('gm_key');
+const saved = localStorage.getItem('gm_key');
 if (saved) {
   apiInput.value = saved;
   apiBadge.textContent = 'Clave lista';
@@ -779,7 +779,7 @@ async function startAnalysis() {
   const local = selLocal.value;
   const visitor = selVisitor.value;
   const phase = document.getElementById('phase-select').value;
-  const key = apiInput.value.trim() || sessionStorage.getItem('gm_key') || '';
+  const key = apiInput.value.trim() || localStorage.getItem('gm_key') || '';
 
   if (!local || !visitor) { alert('Selecciona ambos equipos'); return; }
   if (local === visitor) { alert('Los equipos deben ser distintos'); return; }
