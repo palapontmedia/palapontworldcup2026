@@ -622,7 +622,7 @@
   <div class="header-ball">⚽</div>
   <div>
     <div class="header-logo">MUNDIAL 2026 · PREDICTOR</div>
-    <div class="header-sub">Análisis Predictivo · Gemini AI</div>
+    <div class="header-sub">Análisis con datos en vivo · Gemini AI</div>
   </div>
 </div>
 
@@ -797,6 +797,8 @@ async function startAnalysis() {
 
 Antes de dar tu predicción, razona internamente como un modelo predictivo serio: pondera la calidad de las plantillas, el estilo de juego y cómo encajan tácticamente ambos equipos, la forma reciente, el historial directo, la importancia y presión de la fase del torneo, las bajas y lesiones conocidas, y el factor localía/altitud/clima en las sedes de Norteamérica. Tus probabilidades deben sumar coherentemente y reflejar incertidumbre realista: evita predicciones excesivamente confiadas salvo que haya una diferencia de nivel objetiva y clara. Sé específico, cita jugadores reales y fundamenta cada afirmación.
 
+IMPORTANTE — USA BÚSQUEDA EN INTERNET: Antes de responder, busca en internet las CONVOCATORIAS OFICIALES Y DEFINITIVAS de 26 jugadores de ambas selecciones para el Mundial 2026 (las federaciones las confirmaron a la FIFA el 1-2 de junio de 2026). SOLO menciona como posibles goleadores a jugadores que estén REALMENTE convocados en la lista oficial actual de cada selección. No incluyas jugadores lesionados, no convocados o retirados. Busca también noticias recientes sobre lesiones, estado de forma actual, y cualquier novedad de última hora de ambos equipos. Basa tu análisis en esta información real y actualizada, no solo en tu memoria.
+
 Tienes conocimiento exhaustivo sobre todas las selecciones nacionales del mundo: sus estilos de juego, jugadores clave, historial de partidos, estadísticas, formas recientes, entrenadores, y contexto actual hasta 2026.
 
 Analiza el siguiente partido del Mundial de Fútbol 2026 y responde ÚNICAMENTE con un objeto JSON válido, sin texto adicional, sin backticks, sin markdown, sin preamble.
@@ -817,10 +819,10 @@ Rellena TODOS los campos con información real, específica y fundamentada para 
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
+        tools: [{ google_search: {} }],
         generationConfig: {
           temperature: 0.85,
-          maxOutputTokens: 4096,
-          responseMimeType: "application/json"
+          maxOutputTokens: 4096
         }
       })
     });
@@ -829,8 +831,14 @@ Rellena TODOS los campos con información real, específica y fundamentada para 
 
     if (data.error) throw new Error(data.error.message || 'Error de API');
 
-    const rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-    const clean = rawText.replace(/```json|```/g, '').trim();
+    const parts = data.candidates?.[0]?.content?.parts || [];
+    const rawText = parts.map(p => p.text || '').join('');
+    if (!rawText) throw new Error('Respuesta vacía del modelo');
+
+    const firstBrace = rawText.indexOf('{');
+    const lastBrace = rawText.lastIndexOf('}');
+    if (firstBrace === -1 || lastBrace === -1) throw new Error('No se encontró JSON en la respuesta');
+    const clean = rawText.substring(firstBrace, lastBrace + 1);
     const json = JSON.parse(clean);
 
     hideLoading();
