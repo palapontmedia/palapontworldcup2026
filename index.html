@@ -878,6 +878,144 @@
     align-self: flex-end;
     padding-bottom: 4px;
   }
+  /* ════════════════════════════════════════════
+     CAPA DE MEJORAS ESTÉTICAS Y UX (v2)
+     Profundidad, micro-interacciones y jerarquía.
+     ════════════════════════════════════════════ */
+
+  /* Fondo con un sutil degradado radial para dar profundidad */
+  html, body {
+    background:
+      radial-gradient(1200px 600px at 50% -10%, rgba(0,212,255,0.06), transparent 60%),
+      var(--bg);
+    background-attachment: fixed;
+  }
+
+  /* Scrollbar discreta y temática (escritorio) */
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 6px; border: 2px solid var(--bg); }
+  ::-webkit-scrollbar-thumb:hover { background: #2a4a6a; }
+
+  /* Layout centrado y cómodo en pantallas grandes */
+  .header, .main { max-width: 720px; margin-left: auto; margin-right: auto; }
+
+  /* Header con leve blur translúcido al hacer scroll */
+  .header {
+    background: rgba(13,27,42,0.82);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+  .header-ball {
+    filter: drop-shadow(0 0 8px rgba(0,212,255,0.5));
+    animation: floatBall 3s ease-in-out infinite;
+  }
+  @keyframes floatBall { 0%,100% { transform: translateY(0) rotate(0deg); } 50% { transform: translateY(-3px) rotate(8deg); } }
+
+  /* Tarjetas: borde superior con acento y elevación al pasar/tocar */
+  .card {
+    position: relative;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.25);
+    transition: opacity 0.45s ease, transform 0.45s cubic-bezier(0.22,1,0.36,1), box-shadow 0.25s ease, border-color 0.25s ease;
+  }
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 16px; right: 16px;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, rgba(0,212,255,0.4), transparent);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  .card.visible:hover {
+    border-color: #244a72;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.35), 0 0 0 1px rgba(0,212,255,0.08);
+  }
+  .card.visible:hover::before { opacity: 1; }
+
+  /* Botón analizar con brillo dinámico y mejor feedback */
+  .analyze-btn {
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 4px 16px rgba(0,212,255,0.12);
+  }
+  .analyze-btn::after {
+    content: '';
+    position: absolute;
+    top: 0; left: -120%;
+    width: 80%; height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(0,212,255,0.25), transparent);
+    transform: skewX(-20deg);
+    transition: left 0.6s ease;
+  }
+  .analyze-btn:hover::after { left: 130%; }
+  .analyze-btn:active { transform: scale(0.985); }
+
+  /* Pestañas con indicador deslizante y mejor estado activo */
+  .tab { position: relative; transition: color 0.2s ease, background 0.2s ease; }
+  .tab.active {
+    box-shadow: inset 0 0 0 1px rgba(0,212,255,0.25);
+  }
+
+  /* Chips de grupo: feedback táctil */
+  .group-chip { transition: all 0.18s ease; }
+  .group-chip:active { transform: scale(0.94); }
+  .group-chip.active { box-shadow: 0 2px 10px rgba(0,212,255,0.15); }
+
+  /* Tarjetas de partido: indicador de acción más claro */
+  .match-card {
+    transition: border-color 0.2s ease, transform 0.12s ease, box-shadow 0.2s ease, background 0.2s ease;
+  }
+  .match-card:hover {
+    border-color: #244a72;
+    background: #0f2133;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+  }
+  .match-card:hover .match-arrow { transform: translateX(3px); }
+  .match-arrow { transition: transform 0.2s ease; }
+
+  /* Marcador: números con sombra de neón sutil */
+  .sb-goals.local { text-shadow: 0 0 18px rgba(0,212,255,0.35); }
+  .sb-goals.visitor { text-shadow: 0 0 18px rgba(255,215,0,0.3); }
+
+  /* Badges de forma: micro-aparición escalonada */
+  .form-badge { transition: transform 0.2s ease; }
+  .form-badge:hover { transform: translateY(-2px); }
+
+  /* Barras de probabilidad con brillo */
+  .pb-l { box-shadow: 0 0 8px rgba(0,212,255,0.4); }
+  .pb-v { box-shadow: 0 0 8px rgba(255,215,0,0.35); }
+
+  /* Scorer: realce de la fila al pasar */
+  .scorer { transition: background 0.2s ease, transform 0.15s ease; }
+  .scorer:hover { background: #0f2133; transform: translateX(2px); }
+
+  /* Inputs y selects: foco más claro y accesible */
+  .team-select:focus, .phase-select:focus, .api-bar:focus-within {
+    box-shadow: 0 0 0 3px rgba(0,212,255,0.12);
+  }
+  .api-bar { transition: box-shadow 0.2s ease, border-color 0.2s ease; }
+  .api-bar:focus-within { border-color: var(--cyan); }
+
+  /* Botones volver: feedback */
+  .back-btn { transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease; }
+  .back-btn:hover { background: rgba(0,212,255,0.05); }
+
+  /* Switch con halo al activarse */
+  .switch input:checked + .switch-slider { box-shadow: 0 0 10px rgba(0,212,255,0.3); }
+
+  /* Aparición suave de la vista de resultados */
+  .results.show { animation: fadeUp 0.4s ease; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* Respeta a quien prefiere menos animación */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+  }
+
+  /* Pequeño pulido tipográfico */
+  .narrative { letter-spacing: 0.1px; }
+  .card-title { opacity: 0.95; }
 </style>
 </head>
 <body>
@@ -1533,11 +1671,36 @@ function renderResults(d, local, visitor, lf, vf, phase, fromCache) {
   d = d || {};
   // Valores por defecto seguros: si el modelo omite algún campo, no se rompe.
   const ND = '—'; // "no disponible"
+
+  // Escapa caracteres HTML para evitar que texto del modelo rompa el layout
+  // o inyecte etiquetas. Convierte valores no-string de forma segura.
+  const esc = (v) => {
+    if (v === null || v === undefined) return '';
+    return String(v)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  };
+  // Convierte a entero seguro dentro de un rango (para porcentajes, etc.)
+  const num = (v, min, max, def) => {
+    const n = parseInt(v, 10);
+    if (isNaN(n)) return def !== undefined ? def : 0;
+    if (min !== undefined && n < min) return min;
+    if (max !== undefined && n > max) return max;
+    return n;
+  };
+
   const p = Object.assign({
     marcador_probable: ND, probabilidad_local: 0, probabilidad_empate: 0,
     probabilidad_visitante: 0, rango_goles: ND, tipo_partido: ND,
     resumen_narrativo: 'Análisis no disponible para este partido.'
   }, d.prediccion || {});
+  // Sanear y acotar valores numéricos de la predicción
+  p.probabilidad_local = num(p.probabilidad_local, 0, 100);
+  p.probabilidad_empate = num(p.probabilidad_empate, 0, 100);
+  p.probabilidad_visitante = num(p.probabilidad_visitante, 0, 100);
 
   // Separar el marcador "2-1" en goles de local y visitante (tolerante a formatos raros)
   let golLocal = ND, golVisitante = ND;
@@ -1551,6 +1714,8 @@ function renderResults(d, local, visitor, lf, vf, phase, fromCache) {
   const t = d.tactica || {};
   t.local = Object.assign(tLado(), t.local || {});
   t.visitante = Object.assign(tLado(), t.visitante || {});
+  t.local.posesion_estimada = num(t.local.posesion_estimada, 0, 100);
+  t.visitante.posesion_estimada = num(t.visitante.posesion_estimada, 0, 100);
   t.zona_decisiva = t.zona_decisiva || ND;
   t.matchup_clave = t.matchup_clave || ND;
 
@@ -1560,24 +1725,38 @@ function renderResults(d, local, visitor, lf, vf, phase, fromCache) {
   const c = d.contexto || {};
   c.forma_local = Object.assign(formaDef(), c.forma_local || {});
   c.forma_visitante = Object.assign(formaDef(), c.forma_visitante || {});
+  // Asegurar que ultimos5 es un array de máximo 5 valores válidos
+  const cleanForm = (arr) => (Array.isArray(arr) ? arr : []).slice(0, 5)
+    .map(r => (r === 'W' || r === 'D' || r === 'L') ? r : 'D');
+  c.forma_local.ultimos5 = cleanForm(c.forma_local.ultimos5);
+  c.forma_visitante.ultimos5 = cleanForm(c.forma_visitante.ultimos5);
   c.historial_directo = Object.assign({
     partidos_totales: 0, victorias_local: 0, empates: 0,
     victorias_visitante: 0, tendencia_historica: ND
   }, c.historial_directo || {});
 
-  const g = Array.isArray(d.goleadores_probables) ? d.goleadores_probables : [];
+  const g = (Array.isArray(d.goleadores_probables) ? d.goleadores_probables : [])
+    .filter(s => s && s.nombre).slice(0, 8); // límite defensivo
   const conf = Object.assign({ indice: 0, factores_incertidumbre: [] }, d.confianza || {});
+  conf.indice = num(conf.indice, 0, 100);
 
   const formBadge = r => {
     const cls = r === 'W' ? 'fw' : r === 'D' ? 'fd' : 'fl';
     return `<div class="form-badge ${cls}">${r}</div>`;
   };
 
+  // Normaliza el ánimo a uno de los 3 valores válidos (para clase CSS segura)
+  const animoClass = (v) => {
+    const s = String(v || '').trim();
+    if (s === 'Positivo' || s === 'Negativo' || s === 'Neutro') return s;
+    return 'Neutro';
+  };
+
   const scorerTeamLabel = (equipo) =>
-    equipo === 'local' ? `${lf} ${local}` : `${vf} ${visitor}`;
+    equipo === 'local' ? `${lf} ${esc(local)}` : `${vf} ${esc(visitor)}`;
 
   const cacheNote = fromCache
-    ? `<div style="font-size:11px;color:var(--muted);text-align:center;margin-bottom:10px;background:var(--bg);border:1px dashed var(--border);border-radius:8px;padding:8px">📁 Análisis guardado (sin consumir API). <a href="#" onclick="reAnalyze('${local}','${visitor}','${phase}');return false;" style="color:var(--cyan)">Volver a analizar</a></div>`
+    ? `<div style="font-size:11px;color:var(--muted);text-align:center;margin-bottom:10px;background:var(--bg);border:1px dashed var(--border);border-radius:8px;padding:8px">📁 Análisis guardado (sin consumir API). <a href="#" onclick="reAnalyze('${esc(local)}','${esc(visitor)}','${esc(phase)}');return false;" style="color:var(--cyan)">Volver a analizar</a></div>`
     : '';
 
   const html = `
@@ -1585,10 +1764,10 @@ function renderResults(d, local, visitor, lf, vf, phase, fromCache) {
     ${cacheNote}
 
     <div class="match-header">
-      <div class="mh-phase">${phase} · Mundial 2026</div>
-      <span class="mh-team l">${lf} ${local}</span>
+      <div class="mh-phase">${esc(phase)} · Mundial 2026</div>
+      <span class="mh-team l">${lf} ${esc(local)}</span>
       <span class="mh-vs">VS</span>
-      <span class="mh-team v">${vf} ${visitor}</span>
+      <span class="mh-team v">${vf} ${esc(visitor)}</span>
     </div>
 
     <!-- CARD A: PREDICCIÓN -->
@@ -1612,11 +1791,11 @@ function renderResults(d, local, visitor, lf, vf, phase, fromCache) {
           <span class="sb-goals visitor">${golVisitante}</span>
         </div>
       </div>
-      <div class="range-badge">${p.rango_goles}</div>
-      <div class="tipo-badge">${p.tipo_partido}</div>
+      <div class="range-badge">${esc(p.rango_goles)}</div>
+      <div class="tipo-badge">${esc(p.tipo_partido)}</div>
       <div class="prob-row">
         <div class="prob-item">
-          <div class="prob-label">${lf} ${local}</div>
+          <div class="prob-label">${lf} ${esc(local)}</div>
           <div class="prob-val l">${p.probabilidad_local}%</div>
         </div>
         <div class="prob-item">
@@ -1624,7 +1803,7 @@ function renderResults(d, local, visitor, lf, vf, phase, fromCache) {
           <div class="prob-val d">${p.probabilidad_empate}%</div>
         </div>
         <div class="prob-item">
-          <div class="prob-label">${vf} ${visitor}</div>
+          <div class="prob-label">${vf} ${esc(visitor)}</div>
           <div class="prob-val v">${p.probabilidad_visitante}%</div>
         </div>
       </div>
@@ -1633,7 +1812,7 @@ function renderResults(d, local, visitor, lf, vf, phase, fromCache) {
         <div class="pb pb-d" style="width:${p.probabilidad_empate}%"></div>
         <div class="pb pb-v" style="width:${p.probabilidad_visitante}%"></div>
       </div>
-      <div class="narrative">${p.resumen_narrativo}</div>
+      <div class="narrative">${esc(p.resumen_narrativo)}</div>
     </div>
 
     <!-- CARD B: TÁCTICA -->
@@ -1644,34 +1823,34 @@ function renderResults(d, local, visitor, lf, vf, phase, fromCache) {
       </div>
       <div class="tactic-cols">
         <div class="tactic-col">
-          <div class="tac-name l">${lf} ${local}</div>
+          <div class="tac-name l">${lf} ${esc(local)}</div>
           <div class="tac-row"><span class="tac-k">Posesión</span><span class="tac-v">${t.local.posesion_estimada}%</span></div>
-          <div class="tac-row"><span class="tac-k">Línea def.</span><span class="tac-v">${t.local.linea_defensiva}</span></div>
-          <div class="tac-row"><span class="tac-k">Presión</span><span class="tac-v">${t.local.presion}</span></div>
+          <div class="tac-row"><span class="tac-k">Línea def.</span><span class="tac-v">${esc(t.local.linea_defensiva)}</span></div>
+          <div class="tac-row"><span class="tac-k">Presión</span><span class="tac-v">${esc(t.local.presion)}</span></div>
           <div class="tac-strength">
-            <div class="plus">+ ${t.local.fortaleza_clave}</div>
-            <div class="minus">− ${t.local.debilidad_clave}</div>
+            <div class="plus">+ ${esc(t.local.fortaleza_clave)}</div>
+            <div class="minus">− ${esc(t.local.debilidad_clave)}</div>
           </div>
         </div>
         <div class="tactic-col">
-          <div class="tac-name v">${vf} ${visitor}</div>
+          <div class="tac-name v">${vf} ${esc(visitor)}</div>
           <div class="tac-row"><span class="tac-k">Posesión</span><span class="tac-v">${t.visitante.posesion_estimada}%</span></div>
-          <div class="tac-row"><span class="tac-k">Línea def.</span><span class="tac-v">${t.visitante.linea_defensiva}</span></div>
-          <div class="tac-row"><span class="tac-k">Presión</span><span class="tac-v">${t.visitante.presion}</span></div>
+          <div class="tac-row"><span class="tac-k">Línea def.</span><span class="tac-v">${esc(t.visitante.linea_defensiva)}</span></div>
+          <div class="tac-row"><span class="tac-k">Presión</span><span class="tac-v">${esc(t.visitante.presion)}</span></div>
           <div class="tac-strength">
-            <div class="plus">+ ${t.visitante.fortaleza_clave}</div>
-            <div class="minus">− ${t.visitante.debilidad_clave}</div>
+            <div class="plus">+ ${esc(t.visitante.fortaleza_clave)}</div>
+            <div class="minus">− ${esc(t.visitante.debilidad_clave)}</div>
           </div>
         </div>
       </div>
       <div class="zone-box">
         <div class="zone-lbl">Zona decisiva</div>
-        <div class="zone-txt">${t.zona_decisiva}</div>
+        <div class="zone-txt">${esc(t.zona_decisiva)}</div>
       </div>
       <div style="height:8px"></div>
       <div class="matchup-box">
         <div class="matchup-lbl">Duelo clave</div>
-        <div class="matchup-txt">${t.matchup_clave}</div>
+        <div class="matchup-txt">${esc(t.matchup_clave)}</div>
       </div>
     </div>
 
@@ -1689,13 +1868,13 @@ function renderResults(d, local, visitor, lf, vf, phase, fromCache) {
       <div class="scorers">
         ${g.map(s => `
           <div class="scorer">
-            <div class="scorer-pct">${s.probabilidad_gol}%</div>
+            <div class="scorer-pct">${num(s.probabilidad_gol, 0, 100)}%</div>
             <div class="scorer-info">
-              <div class="scorer-name">${s.nombre}</div>
-              <div class="scorer-meta">${scorerTeamLabel(s.equipo)} · ${s.posicion}</div>
-              <div class="scorer-reason">${s.razon}</div>
+              <div class="scorer-name">${esc(s.nombre)}</div>
+              <div class="scorer-meta">${scorerTeamLabel(s.equipo)} · ${esc(s.posicion)}</div>
+              <div class="scorer-reason">${esc(s.razon)}</div>
               <div class="scorer-bar-bg">
-                <div class="scorer-bar-fill" style="width:${Math.min(s.probabilidad_gol, 100)}%"></div>
+                <div class="scorer-bar-fill" style="width:${num(s.probabilidad_gol, 0, 100)}%"></div>
               </div>
             </div>
           </div>`).join('')}
@@ -1710,29 +1889,29 @@ function renderResults(d, local, visitor, lf, vf, phase, fromCache) {
       </div>
       <div class="context-cols">
         <div class="ctx-col">
-          <div class="ctx-name l">${lf} ${local}</div>
+          <div class="ctx-name l">${lf} ${esc(local)}</div>
           <div class="form-row">${(c.forma_local.ultimos5 || []).map(formBadge).join('')}</div>
-          <span class="animo-badge animo-${c.forma_local.factor_animo}">${c.forma_local.factor_animo}</span>
-          <div class="ctx-trend">${c.forma_local.tendencia}</div>
-          <div class="ctx-note">${c.forma_local.nota_contextual}</div>
+          <span class="animo-badge animo-${animoClass(c.forma_local.factor_animo)}">${esc(animoClass(c.forma_local.factor_animo))}</span>
+          <div class="ctx-trend">${esc(c.forma_local.tendencia)}</div>
+          <div class="ctx-note">${esc(c.forma_local.nota_contextual)}</div>
         </div>
         <div class="ctx-col">
-          <div class="ctx-name v">${vf} ${visitor}</div>
+          <div class="ctx-name v">${vf} ${esc(visitor)}</div>
           <div class="form-row">${(c.forma_visitante.ultimos5 || []).map(formBadge).join('')}</div>
-          <span class="animo-badge animo-${c.forma_visitante.factor_animo}">${c.forma_visitante.factor_animo}</span>
-          <div class="ctx-trend">${c.forma_visitante.tendencia}</div>
-          <div class="ctx-note">${c.forma_visitante.nota_contextual}</div>
+          <span class="animo-badge animo-${animoClass(c.forma_visitante.factor_animo)}">${esc(animoClass(c.forma_visitante.factor_animo))}</span>
+          <div class="ctx-trend">${esc(c.forma_visitante.tendencia)}</div>
+          <div class="ctx-note">${esc(c.forma_visitante.nota_contextual)}</div>
         </div>
       </div>
       <div class="history-box">
         <div class="sec-label" style="margin-bottom:10px">Historial directo</div>
         <div class="history-stats">
-          <div><div class="h-num">${c.historial_directo.partidos_totales}</div><div class="h-lbl">Total</div></div>
-          <div><div class="h-num" style="color:var(--cyan)">${c.historial_directo.victorias_local}</div><div class="h-lbl">${local}</div></div>
-          <div><div class="h-num" style="color:var(--muted)">${c.historial_directo.empates}</div><div class="h-lbl">Empates</div></div>
-          <div><div class="h-num" style="color:var(--gold)">${c.historial_directo.victorias_visitante}</div><div class="h-lbl">${visitor}</div></div>
+          <div><div class="h-num">${num(c.historial_directo.partidos_totales, 0, 999)}</div><div class="h-lbl">Total</div></div>
+          <div><div class="h-num" style="color:var(--cyan)">${num(c.historial_directo.victorias_local, 0, 999)}</div><div class="h-lbl">${esc(local)}</div></div>
+          <div><div class="h-num" style="color:var(--muted)">${num(c.historial_directo.empates, 0, 999)}</div><div class="h-lbl">Empates</div></div>
+          <div><div class="h-num" style="color:var(--gold)">${num(c.historial_directo.victorias_visitante, 0, 999)}</div><div class="h-lbl">${esc(visitor)}</div></div>
         </div>
-        <div class="history-trend">${c.historial_directo.tendencia_historica}</div>
+        <div class="history-trend">${esc(c.historial_directo.tendencia_historica)}</div>
       </div>
     </div>
 
@@ -1746,15 +1925,15 @@ function renderResults(d, local, visitor, lf, vf, phase, fromCache) {
         <svg class="gauge-svg" viewBox="0 0 180 100" aria-hidden="true">
           <path d="M18,90 A72,72 0 0,1 162,90" fill="none" stroke="#1a3a5c" stroke-width="12" stroke-linecap="round"/>
           <path d="M18,90 A72,72 0 0,1 162,90" fill="none" stroke="#00D4FF" stroke-width="12" stroke-linecap="round"
-            stroke-dasharray="226" stroke-dashoffset="${Math.round(226 - (226 * (conf?.indice || 0) / 100))}"
+            stroke-dasharray="226" stroke-dashoffset="${Math.round(226 - (226 * conf.indice / 100))}"
             id="gauge-arc" style="transition: stroke-dashoffset 1.5s ease;"/>
-          <text x="90" y="86" text-anchor="middle" font-family="Rajdhani,sans-serif" font-size="28" font-weight="700" fill="#00D4FF">${conf?.indice || 0}%</text>
+          <text x="90" y="86" text-anchor="middle" font-family="Rajdhani,sans-serif" font-size="28" font-weight="700" fill="#00D4FF">${conf.indice}%</text>
         </svg>
         <div class="conf-lbl">Confianza del modelo en esta predicción</div>
         <div class="uncertainty">
-          ${(conf?.factores_incertidumbre || []).map(f => `
+          ${(conf.factores_incertidumbre || []).map(f => `
             <div class="unc-item">
-              <span class="unc-icon">⚠</span>${f}
+              <span class="unc-icon">⚠</span>${esc(f)}
             </div>`).join('')}
         </div>
       </div>
