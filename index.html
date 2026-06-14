@@ -878,6 +878,159 @@
     align-self: flex-end;
     padding-bottom: 4px;
   }
+
+  /* ── BASE DE CONOCIMIENTO (vídeos / notas humanas) ── */
+  .kb-section {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+    margin-bottom: 18px;
+  }
+  .kb-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .kb-title {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--sub);
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .kb-count {
+    font-size: 11px;
+    background: rgba(0,212,255,0.12);
+    color: var(--cyan);
+    border-radius: 10px;
+    padding: 2px 8px;
+    font-weight: 600;
+  }
+  .kb-chevron { color: var(--muted); transition: transform 0.25s ease; }
+  .kb-section.open .kb-chevron { transform: rotate(180deg); }
+  .kb-body { display: none; margin-top: 12px; }
+  .kb-section.open .kb-body { display: block; }
+  .kb-desc { font-size: 11px; color: var(--muted); line-height: 1.5; margin-bottom: 10px; }
+  .kb-textarea {
+    width: 100%;
+    min-height: 90px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    padding: 10px 12px;
+    font-size: 13px;
+    font-family: 'Inter', sans-serif;
+    line-height: 1.5;
+    outline: none;
+    resize: vertical;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+  .kb-textarea:focus { border-color: var(--cyan); box-shadow: 0 0 0 3px rgba(0,212,255,0.12); }
+  .kb-textarea::placeholder { color: #3a4a5a; }
+  .kb-add-btn {
+    width: 100%;
+    margin-top: 8px;
+    background: rgba(0,212,255,0.08);
+    border: 1px solid var(--cyan);
+    border-radius: 8px;
+    color: var(--cyan);
+    padding: 10px;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: background 0.2s ease;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  .kb-add-btn:active { background: rgba(0,212,255,0.18); }
+  .kb-list { margin-top: 12px; display: flex; flex-direction: column; gap: 8px; }
+  .kb-item {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    font-size: 12px;
+    color: var(--sub);
+    line-height: 1.5;
+    position: relative;
+  }
+  .kb-item-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+  }
+  .kb-item-date { font-size: 10px; color: var(--muted); font-family: 'Rajdhani', sans-serif; letter-spacing: 0.5px; }
+  .kb-item-del {
+    background: transparent;
+    border: none;
+    color: var(--red);
+    cursor: pointer;
+    font-size: 11px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .kb-item-del:active { background: rgba(230,57,70,0.15); }
+  .kb-item-text {
+    max-height: 60px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+  }
+  .kb-empty { font-size: 11px; color: var(--muted); font-style: italic; text-align: center; padding: 8px; }
+  .kb-clear {
+    width: 100%;
+    margin-top: 8px;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--muted);
+    padding: 8px;
+    font-size: 12px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .kb-clear:active { border-color: var(--red); color: var(--red); }
+  .kb-match-note {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px dashed var(--border);
+  }
+  .kb-match-note-title {
+    font-size: 11px;
+    color: var(--gold);
+    font-family: 'Rajdhani', sans-serif;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  /* Indicador en resultados de que se usó info humana */
+  .human-source-tag {
+    background: rgba(255,215,0,0.08);
+    border: 1px solid rgba(255,215,0,0.3);
+    border-radius: 8px;
+    padding: 8px 10px;
+    margin-bottom: 12px;
+    font-size: 11px;
+    color: var(--sub);
+    line-height: 1.5;
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+  }
   /* ════════════════════════════════════════════
      CAPA DE MEJORAS ESTÉTICAS Y UX (v2)
      Profundidad, micro-interacciones y jerarquía.
@@ -1058,6 +1211,23 @@
         <input type="checkbox" id="search-switch" checked onchange="toggleSearch()">
         <span class="switch-slider"></span>
       </label>
+    </div>
+
+    <!-- BASE DE CONOCIMIENTO HUMANO (vídeos / análisis de expertos) -->
+    <div class="kb-section" id="kb-section">
+      <div class="kb-header" onclick="toggleKB()">
+        <div class="kb-title">🎥 Análisis de expertos <span class="kb-count" id="kb-count">0</span></div>
+        <svg class="kb-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+      <div class="kb-body">
+        <div class="kb-desc">
+          Pega aquí transcripciones de vídeos de YouTube o notas de análisis de expertos (cómo sacar la transcripción: bajo el vídeo → menú "..." → "Mostrar transcripción"). Se guardan y se aplican a <strong>todos</strong> los análisis con <strong>peso reducido</strong>: el modelo las trata como opinión humana previa al Mundial, las contrasta con los hechos actuales y descarta lo que haya quedado desmentido.
+        </div>
+        <textarea class="kb-textarea" id="kb-input" placeholder="Pega aquí la transcripción del vídeo o tus notas..."></textarea>
+        <button class="kb-add-btn" onclick="addKnowledge()">+ Añadir a la base</button>
+        <div class="kb-list" id="kb-list"></div>
+        <button class="kb-clear" id="kb-clear-btn" onclick="clearKnowledge()" style="display:none">Borrar toda la base de conocimiento</button>
+      </div>
     </div>
 
     <!-- PESTAÑAS -->
@@ -1367,6 +1537,110 @@ try {
   }
 } catch (e) {}
 
+/* ── BASE DE CONOCIMIENTO HUMANO (análisis de expertos / vídeos) ──
+   Se guarda en localStorage como un array de entradas {ts, text}.
+   Es acumulativa: añadir una nueva NO borra las anteriores. */
+const KB_KEY = 'mw_knowledge';
+let usedHumanSources = false; // indica si el último análisis usó info humana
+
+/* Notas específicas por partido (clave por enfrentamiento) */
+function matchNoteKey(local, visitor) {
+  return 'mw_note_' + local + '|' + visitor;
+}
+function getMatchNote(local, visitor) {
+  try { return localStorage.getItem(matchNoteKey(local, visitor)) || ''; }
+  catch (e) { return ''; }
+}
+function setMatchNote(local, visitor, text) {
+  try {
+    if (text && text.trim()) localStorage.setItem(matchNoteKey(local, visitor), text.trim());
+    else localStorage.removeItem(matchNoteKey(local, visitor));
+  } catch (e) {}
+}
+function saveMatchNoteFromUI(local, visitor) {
+  const el = document.getElementById('match-note-input');
+  if (!el) return;
+  setMatchNote(local, visitor, el.value);
+  // Limpiamos la caché de este partido para que la próxima vez se reanalice con la nota
+  try { localStorage.removeItem('mw_cache_' + local + '|' + visitor + '|Fase de Grupos'); } catch (e) {}
+  alert('Nota guardada. Se usará la próxima vez que analices este partido (pulsa "Volver a analizar").');
+}
+
+function getKnowledge() {
+  try {
+    const raw = localStorage.getItem(KB_KEY);
+    const arr = raw ? JSON.parse(raw) : [];
+    return Array.isArray(arr) ? arr : [];
+  } catch (e) { return []; }
+}
+
+function saveKnowledge(arr) {
+  try { localStorage.setItem(KB_KEY, JSON.stringify(arr)); } catch (e) {
+    alert('No se pudo guardar: el almacenamiento del navegador está lleno. Borra alguna entrada antigua.');
+  }
+}
+
+function toggleKB() {
+  document.getElementById('kb-section').classList.toggle('open');
+}
+
+function addKnowledge() {
+  const input = document.getElementById('kb-input');
+  const text = input.value.trim();
+  if (text.length < 20) {
+    alert('Pega un texto algo más largo (una transcripción o notas).');
+    return;
+  }
+  const arr = getKnowledge();
+  arr.push({ ts: Date.now(), text: text });
+  saveKnowledge(arr);
+  input.value = '';
+  renderKnowledge();
+}
+
+function deleteKnowledge(ts) {
+  const arr = getKnowledge().filter(e => e.ts !== ts);
+  saveKnowledge(arr);
+  renderKnowledge();
+}
+
+function clearKnowledge() {
+  if (!confirm('¿Borrar TODA la base de conocimiento? Esto no se puede deshacer.')) return;
+  try { localStorage.removeItem(KB_KEY); } catch (e) {}
+  renderKnowledge();
+}
+
+function renderKnowledge() {
+  const arr = getKnowledge();
+  const list = document.getElementById('kb-list');
+  const count = document.getElementById('kb-count');
+  const clearBtn = document.getElementById('kb-clear-btn');
+  count.textContent = arr.length;
+  if (arr.length === 0) {
+    list.innerHTML = '<div class="kb-empty">Aún no has añadido ningún análisis de expertos.</div>';
+    clearBtn.style.display = 'none';
+    return;
+  }
+  clearBtn.style.display = 'block';
+  const fmtDate = (ts) => {
+    const d = new Date(ts);
+    return d.toLocaleDateString('es-ES', { day: '2-digit', month: 'short' }) + ' ' +
+           d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+  };
+  // Escapado básico para mostrar el preview de forma segura
+  const escView = (s) => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  list.innerHTML = arr.map((e, i) => `
+    <div class="kb-item">
+      <div class="kb-item-meta">
+        <span class="kb-item-date">📄 Análisis ${i + 1} · ${fmtDate(e.ts)}</span>
+        <button class="kb-item-del" onclick="deleteKnowledge(${e.ts})">✕ Eliminar</button>
+      </div>
+      <div class="kb-item-text">${escView(e.text)}</div>
+    </div>`).join('');
+}
+
+renderKnowledge();
+
 /* Inicializar calendario al cargar */
 renderGroupFilter();
 renderMatches();
@@ -1534,6 +1808,35 @@ async function startAnalysis() {
   document.getElementById('loading-view').className = 'loading show';
   showLoading();
 
+  // ── Construir bloque de conocimiento humano (vídeos / expertos) ──
+  // Combina la base general con las notas específicas de este partido (si las hay).
+  let humanBlock = '';
+  usedHumanSources = false;
+  const generalKB = getKnowledge();
+  const matchKB = getMatchNote(local, visitor);
+  if (generalKB.length > 0 || matchKB) {
+    usedHumanSources = true;
+    let material = '';
+    generalKB.forEach((e, i) => {
+      // Recortamos cada entrada para no saturar el contexto (primeros ~1200 caracteres)
+      material += `\n--- Análisis experto general #${i + 1} ---\n${String(e.text).slice(0, 1200)}\n`;
+    });
+    if (matchKB) {
+      material += `\n--- Nota específica para ${local} vs ${visitor} ---\n${String(matchKB).slice(0, 1200)}\n`;
+    }
+    humanBlock = `
+
+INFORMACIÓN DE ANÁLISIS HUMANOS (PREDICCIONES DE EXPERTOS PREVIAS AL MUNDIAL) — ÚSALA CON CAUTELA:
+A continuación tienes análisis y predicciones hechas por expertos humanos (de vídeos de YouTube u otras fuentes) ANTES de que empezara el Mundial. Trátalas así, de forma estricta:
+1. PESO MENOR: son opiniones subjetivas, no datos objetivos. Pondéralas por DEBAJO de los datos reales (forma, plantillas, estadísticas, búsqueda). Que influyan poco en las cifras finales, como un matiz, nunca como factor principal.
+2. CONTRASTE CON LA REALIDAD: como son previas al Mundial, comprueba si lo que predijeron YA ha sucedido o ha quedado desmentido por los hechos actuales (resultados ya jugados, lesiones, sorpresas). Si algo que dijeron ya NO es válido, DESCÁRTALO y no lo menciones como si fuera vigente.
+3. NO CONFUNDIR: nunca presentes una predicción humana ya superada por los hechos como información actual. Prioriza siempre la realidad sobre la predicción previa.
+4. VALOR: úsalas solo para captar matices que los datos no reflejen (lectura táctica fina, contexto de vestuario, intangibles) y solo si siguen teniendo sentido a día de hoy.
+Si estos análisis aportan algo útil y aún válido, puedes reflejarlo sutilmente en el razonamiento; si no, ignóralos.
+MATERIAL:${material}
+`;
+  }
+
   const searchInstruction = useSearch
     ? `INSTRUCCIÓN OBLIGATORIA SOBRE CONVOCATORIAS — LÉELA CON ATENCIÓN: Las convocatorias finales de 26 jugadores para el Mundial 2026 se confirmaron a finales de mayo / principios de junio de 2026, y contienen MUCHAS sorpresas y ausencias de estrellas habituales. ANTES de nombrar a ningún goleador, busca en internet la convocatoria oficial y definitiva de 26 jugadores de CADA selección de este partido para el Mundial 2026. Verifica jugador por jugador. NO te fíes de tu memoria: muchos delanteros famosos que crees titulares NO fueron convocados (por decisión técnica, lesión o relevo generacional). SOLO puedes nombrar como posibles goleadores a jugadores que aparezcan EXPLÍCITAMENTE en la convocatoria oficial de 26 que encuentres en la búsqueda. Si dudas de si un jugador está convocado, NO lo incluyas. Busca también lesiones y novedades recientes.`
     : `ADVERTENCIA CRÍTICA SOBRE CONVOCATORIAS: Las convocatorias del Mundial 2026 tienen ausencias importantes de jugadores estrella habituales. Como NO tienes búsqueda activada, NO puedes verificar las listas oficiales. Por tanto, para los goleadores nombra solo a los jugadores MÁS consolidados e indiscutibles de cada selección (capitanes, estrellas absolutas con rol fijo). EVITA nombrar a delanteros de los que no tengas certeza absoluta de que siguen siendo titulares fijos en 2026, porque podrían no estar convocados. Es preferible nombrar pocos jugadores muy seguros que arriesgar con nombres dudosos.`;
@@ -1559,7 +1862,7 @@ Rellena TODOS los campos con información real, específica y fundamentada para 
 
 REGLAS DE FORMATO CRÍTICAS: Devuelve JSON estrictamente válido. NO uses comillas dobles (") dentro de los textos; si necesitas destacar algo usa comillas simples ('). NO uses saltos de línea dentro de los valores de texto. NO añadas comas finales. NO incluyas ningún texto fuera del objeto JSON.
 
-REGLA DE HONESTIDAD SOBRE LA CONFIANZA: El fútbol es altamente impredecible. El "indice" de confianza debe ser REALISTA y CALIBRADO, nunca inflado. Úsalo así: 30-45 si los equipos están muy igualados o hay mucha incertidumbre; 45-60 cuando hay un favorito moderado; 60-72 solo cuando hay una diferencia de nivel clara y objetiva. NUNCA superes 75, porque ni los mejores modelos del mundo aciertan resultados de fútbol con más fiabilidad. El marcador es el escenario MÁS probable, no una certeza. Las probabilidades de victoria/empate/derrota deben sumar exactamente 100.`;
+REGLA DE HONESTIDAD SOBRE LA CONFIANZA: El fútbol es altamente impredecible. El "indice" de confianza debe ser REALISTA y CALIBRADO, nunca inflado. Úsalo así: 30-45 si los equipos están muy igualados o hay mucha incertidumbre; 45-60 cuando hay un favorito moderado; 60-72 solo cuando hay una diferencia de nivel clara y objetiva. NUNCA superes 75, porque ni los mejores modelos del mundo aciertan resultados de fútbol con más fiabilidad. El marcador es el escenario MÁS probable, no una certeza. Las probabilidades de victoria/empate/derrota deben sumar exactamente 100.${humanBlock}`;
 
   // Mostrar un mensaje de error con consejo según el tipo
   const showError = (e) => {
@@ -1769,6 +2072,7 @@ function renderResults(d, local, visitor, lf, vf, phase, fromCache) {
       <span class="mh-vs">VS</span>
       <span class="mh-team v">${vf} ${esc(visitor)}</span>
     </div>
+    ${usedHumanSources ? `<div class="human-source-tag">🎥 <div>Este análisis ha tenido en cuenta los <strong>análisis de expertos</strong> que añadiste, con peso reducido y contrastándolos con los hechos actuales.</div></div>` : ''}
 
     <!-- CARD A: PREDICCIÓN -->
     <div class="card" id="c0">
@@ -1936,6 +2240,15 @@ function renderResults(d, local, visitor, lf, vf, phase, fromCache) {
               <span class="unc-icon">⚠</span>${esc(f)}
             </div>`).join('')}
         </div>
+      </div>
+    </div>
+
+    <div class="kb-section open" style="margin-top:14px">
+      <div class="kb-match-note" style="border-top:none;padding-top:0">
+        <div class="kb-match-note-title">📝 Nota de experto solo para ${esc(local)} vs ${esc(visitor)}</div>
+        <div class="kb-desc">Pega aquí un análisis humano específico de ESTE partido (ej: la parte de un vídeo que habla de este enfrentamiento). Se guarda y se usará solo al analizar este partido, con peso reducido.</div>
+        <textarea class="kb-textarea" id="match-note-input" placeholder="Nota específica de este partido...">${esc(getMatchNote(local, visitor))}</textarea>
+        <button class="kb-add-btn" onclick="saveMatchNoteFromUI('${esc(local)}','${esc(visitor)}')">💾 Guardar nota de este partido</button>
       </div>
     </div>
 
