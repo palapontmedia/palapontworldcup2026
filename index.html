@@ -1899,13 +1899,14 @@ REGLA DE HONESTIDAD SOBRE LA CONFIANZA: El fútbol es altamente impredecible. El
       json = await callGemini(prompt, useSearch, key);
     } catch (firstErr) {
       const m = (firstErr.message || '').toLowerCase();
-      const isFormatError = m.includes('formato_invalido') || m.includes('cortó') || m.includes('vacía');
+      const isFormatError = m.includes('formato_invalido') || m.includes('cortó') || m.includes('vacía') || m.includes('bloqueó');
       const isQuotaOrKey = m.includes('quota') || m.includes('429') || m.includes('api key') || m.includes('403') || m.includes('401');
       if (isFormatError && !isQuotaOrKey) {
-        // Reintentamos manteniendo la búsqueda si estaba activada (para no perder
-        // los datos reales de convocatorias). Solo cambia el reintento del modelo.
-        document.getElementById('loading-text').textContent = 'Reintentando análisis...';
-        json = await callGemini(prompt, useSearch, key);
+        // Reintento de emergencia SIN búsqueda: activa el modo JSON nativo de
+        // Gemini, que es el más fiable para obtener una respuesta bien formada.
+        // (Solo afecta a este reintento puntual, no cambia tu preferencia.)
+        document.getElementById('loading-text').textContent = 'Reintentando en modo seguro...';
+        json = await callGemini(prompt, false, key);
       } else {
         throw firstErr;
       }
@@ -1948,7 +1949,12 @@ async function callGemini(prompt, withSearch, key) {
     contents: [{ parts: [{ text: prompt }] }],
     generationConfig: {
       temperature: 0.7,
-      maxOutputTokens: 8192
+      maxOutputTokens: 8192,
+      // CLAVE: desactivamos el "pensamiento" del modelo. Gemini 2.5 Flash, por
+      // defecto, gasta gran parte de maxOutputTokens razonando internamente, lo
+      // que dejaba la respuesta JSON cortada o vacía. Con thinkingBudget 0 todo
+      // el presupuesto va a la respuesta real.
+      thinkingConfig: { thinkingBudget: 0 }
     }
   };
   if (withSearch) {
@@ -1971,7 +1977,17 @@ async function callGemini(prompt, withSearch, key) {
   const cand = data.candidates?.[0];
   const parts = cand?.content?.parts || [];
   const rawText = parts.map(p => p.text || '').join('');
-  if (!rawText) throw new Error('Respuesta vacía del modelo');
+
+  // Diagnóstico claro según por qué no hay texto
+  if (!rawText) {
+    if (cand?.finishReason === 'MAX_TOKENS') {
+      throw new Error('La respuesta se cortó por longitud');
+    }
+    if (cand?.finishReason === 'SAFETY' || cand?.finishReason === 'RECITATION') {
+      throw new Error('El modelo bloqueó la respuesta. Reintenta.');
+    }
+    throw new Error('Respuesta vacía del modelo');
+  }
 
   if (cand?.finishReason === 'MAX_TOKENS' && rawText.lastIndexOf('}') < rawText.length - 50) {
     throw new Error('La respuesta se cortó por longitud');
