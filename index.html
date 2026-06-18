@@ -1770,6 +1770,28 @@ function parseLooseJSON(text) {
 }
 
 /* ── MAIN ANALYSIS ── */
+/* Llama a Gemini con reintentos y espera exponencial ante saturación (503/500).
+   Esto resuelve el error de "alta demanda": el servidor de Google a veces está
+   saturado y la solución estándar es esperar y reintentar progresivamente. */
+async function callGeminiWithBackoff(prompt, withSearch, key, onWait) {
+  const MAX_ATTEMPTS = 4;
+  let lastErr;
+  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+    try {
+      return await callGemini(prompt, withSearch, key);
+    } catch (e) {
+      lastErr = e;
+      // Solo reintentamos ante saturación del servidor (no ante cuota/clave/formato)
+      if (!e.retryable || attempt === MAX_ATTEMPTS - 1) throw e;
+      // Espera exponencial con algo de aleatoriedad: 2s, 4s, 8s (+ jitter)
+      const waitMs = Math.pow(2, attempt + 1) * 1000 + Math.random() * 1000;
+      if (onWait) onWait(attempt + 1, MAX_ATTEMPTS, Math.round(waitMs / 1000));
+      await new Promise(r => setTimeout(r, waitMs));
+    }
+  }
+  throw lastErr;
+}
+
 async function startAnalysis() {
   const local = selLocal.value;
   const visitor = selVisitor.value;
@@ -1856,9 +1878,13 @@ Fase: ${phase} del Mundial 2026
 
 Devuelve un objeto JSON con EXACTAMENTE esta estructura de claves. Los valores que ves entre <> son INSTRUCCIONES de qué generar, NO valores a copiar: debes sustituirlos por tu análisis real y específico de este partido concreto. NUNCA copies literalmente los textos de ejemplo ni los números de muestra.
 
-{"prediccion":{"marcador_probable":"<el marcador más probable, formato N-N, calculado por ti para este partido concreto>","probabilidad_local":<entero 0-100>,"probabilidad_empate":<entero 0-100>,"probabilidad_visitante":<entero 0-100, los tres deben sumar 100>,"rango_goles":"<rango de goles esperado>","tipo_partido":"<clasificación del partido>","resumen_narrativo":"<3-4 frases de análisis propio y específico de ESTE enfrentamiento>"},"tactica":{"local":{"estilo":"<estilo real de este equipo>","posesion_estimada":<entero 0-100>,"linea_defensiva":"<Alta/Media/Baja>","presion":"<Intensa/Moderada/Baja>","fortaleza_clave":"<fortaleza real>","debilidad_clave":"<debilidad real>"},"visitante":{"estilo":"<estilo real>","posesion_estimada":<entero 0-100>,"linea_defensiva":"<Alta/Media/Baja>","presion":"<Intensa/Moderada/Baja>","fortaleza_clave":"<fortaleza real>","debilidad_clave":"<debilidad real>"},"zona_decisiva":"<dónde se decide el partido>","matchup_clave":"<duelo individual decisivo con nombres reales>"},"goleadores_probables":[{"nombre":"<jugador REAL y convocado>","equipo":"local","probabilidad_gol":<entero 0-100>,"razon":"<razón específica>","posicion":"<posición>"},{"nombre":"<jugador REAL y convocado>","equipo":"visitante","probabilidad_gol":<entero 0-100>,"razon":"<razón>","posicion":"<posición>"}],"contexto":{"forma_local":{"ultimos5":["<W, D o L según resultados reales recientes>","<...>","<...>","<...>","<...>"],"tendencia":"<tendencia real>","factor_animo":"<Positivo/Neutro/Negativo>","nota_contextual":"<info real: lesiones, contexto>"},"forma_visitante":{"ultimos5":["<W, D o L>","<...>","<...>","<...>","<...>"],"tendencia":"<tendencia real>","factor_animo":"<Positivo/Neutro/Negativo>","nota_contextual":"<info real>"},"historial_directo":{"partidos_totales":<entero real>,"victorias_local":<entero>,"empates":<entero>,"victorias_visitante":<entero>,"tendencia_historica":"<historial real entre estos dos equipos>"}},"confianza":{"indice":<entero 30-75 según lo igualado que esté>,"factores_incertidumbre":["<factor real 1>","<factor real 2>","<factor real 3>"]}}
+{"prediccion":{"marcador_probable":"<el marcador más probable, formato N-N, calculado por ti para este partido concreto>","xg_local":<goles esperados del equipo local, número decimal como 1.7>,"xg_visitante":<goles esperados del visitante, número decimal como 1.1>,"probabilidad_local":<entero 0-100>,"probabilidad_empate":<entero 0-100>,"probabilidad_visitante":<entero 0-100, los tres deben sumar 100>,"rango_goles":"<rango de goles esperado>","tipo_partido":"<clasificación del partido>","resumen_narrativo":"<3-4 frases de análisis propio y específico de ESTE enfrentamiento>"},"tactica":{"local":{"estilo":"<estilo real de este equipo>","posesion_estimada":<entero 0-100>,"linea_defensiva":"<Alta/Media/Baja>","presion":"<Intensa/Moderada/Baja>","fortaleza_clave":"<fortaleza real>","debilidad_clave":"<debilidad real>"},"visitante":{"estilo":"<estilo real>","posesion_estimada":<entero 0-100>,"linea_defensiva":"<Alta/Media/Baja>","presion":"<Intensa/Moderada/Baja>","fortaleza_clave":"<fortaleza real>","debilidad_clave":"<debilidad real>"},"zona_decisiva":"<dónde se decide el partido>","matchup_clave":"<duelo individual decisivo con nombres reales>"},"goleadores_probables":[{"nombre":"<jugador REAL y convocado>","equipo":"local","probabilidad_gol":<entero 0-100>,"razon":"<razón específica>","posicion":"<posición>"},{"nombre":"<jugador REAL y convocado>","equipo":"visitante","probabilidad_gol":<entero 0-100>,"razon":"<razón>","posicion":"<posición>"}],"contexto":{"forma_local":{"ultimos5":["<W, D o L según resultados reales recientes>","<...>","<...>","<...>","<...>"],"tendencia":"<tendencia real>","factor_animo":"<Positivo/Neutro/Negativo>","nota_contextual":"<info real: lesiones, contexto>"},"forma_visitante":{"ultimos5":["<W, D o L>","<...>","<...>","<...>","<...>"],"tendencia":"<tendencia real>","factor_animo":"<Positivo/Neutro/Negativo>","nota_contextual":"<info real>"},"historial_directo":{"partidos_totales":<entero real>,"victorias_local":<entero>,"empates":<entero>,"victorias_visitante":<entero>,"tendencia_historica":"<historial real entre estos dos equipos>"}},"confianza":{"indice":<entero 30-75 según lo igualado que esté>,"factores_incertidumbre":["<factor real 1>","<factor real 2>","<factor real 3>"]}}
 
 Incluye entre 4 y 6 goleadores probables (he mostrado solo 2 en el esquema, pero genera más). Genera valores ÚNICOS y específicos para ${local} vs ${visitor}: cada partido debe dar un resultado distinto según las características reales de los equipos. Si dos equipos son muy diferentes en nivel, el marcador debe reflejarlo; no des siempre el mismo resultado.
+
+IMPORTANTE — GOLES ESPERADOS (xG): Estima con cuidado "xg_local" y "xg_visitante" (los goles esperados de cada equipo en este partido), como números decimales realistas (normalmente entre 0.4 y 3.0). Básate en la calidad ofensiva de un equipo frente a la defensiva del otro, la forma reciente y el contexto. Estos xG son la base matemática del cálculo de probabilidades, así que sé riguroso y coherente: un equipo muy superior debe tener un xG bastante mayor que su rival, y un partido igualado, xG parecidos. El marcador_probable debe ser coherente con los xG que estimes.
+
+PONDERACIÓN DE PARTIDOS YA JUGADOS EN EL MUNDIAL 2026: Algunos equipos ya han disputado partidos en este Mundial. Si encuentras que uno de los dos equipos (o ambos) YA ha jugado algún partido en el Mundial 2026, da a esos resultados y a ese rendimiento un peso ligeramente MAYOR (aproximadamente un 5% más) que al resto de partidos previos (clasificación, amistosos, forma anterior), porque reflejan el estado actual real del equipo en el torneo. IMPORTANTE: esto es solo un ajuste leve; NO desestimes ni ignores el historial anterior, que sigue siendo plenamente válido y debe seguir pesando en tu análisis. Simplemente inclina un poco la balanza hacia lo mostrado en el Mundial. Si ningún equipo ha jugado todavía en el Mundial, ignora esta regla y pondera con normalidad. Refleja este ajuste de forma coherente en los xG, la forma reciente y el resumen.
 
 REGLAS DE FORMATO CRÍTICAS: Devuelve JSON estrictamente válido. NO uses comillas dobles (") dentro de los textos; si necesitas destacar algo usa comillas simples ('). NO uses saltos de línea dentro de los valores de texto. NO añadas comas finales. NO incluyas ningún texto fuera del objeto JSON.
 
@@ -1893,10 +1919,15 @@ REGLA DE HONESTIDAD SOBRE LA CONFIANZA: El fútbol es altamente impredecible. El
   };
 
   try {
-    // Intento 1: con la configuración elegida por el usuario
+    // Intento 1: con la configuración elegida por el usuario (con reintentos
+    // automáticos si el servidor de Google está saturado).
     let json;
+    const onWait = (n, total, secs) => {
+      document.getElementById('loading-text').textContent =
+        `Servidor saturado, reintentando en ${secs}s (${n}/${total})...`;
+    };
     try {
-      json = await callGemini(prompt, useSearch, key);
+      json = await callGeminiWithBackoff(prompt, useSearch, key, onWait);
     } catch (firstErr) {
       const m = (firstErr.message || '').toLowerCase();
       const isFormatError = m.includes('formato_invalido') || m.includes('cortó') || m.includes('vacía') || m.includes('bloqueó');
@@ -1904,9 +1935,8 @@ REGLA DE HONESTIDAD SOBRE LA CONFIANZA: El fútbol es altamente impredecible. El
       if (isFormatError && !isQuotaOrKey) {
         // Reintento de emergencia SIN búsqueda: activa el modo JSON nativo de
         // Gemini, que es el más fiable para obtener una respuesta bien formada.
-        // (Solo afecta a este reintento puntual, no cambia tu preferencia.)
         document.getElementById('loading-text').textContent = 'Reintentando en modo seguro...';
-        json = await callGemini(prompt, false, key);
+        json = await callGeminiWithBackoff(prompt, false, key, onWait);
       } else {
         throw firstErr;
       }
@@ -1970,6 +2000,18 @@ async function callGemini(prompt, withSearch, key) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(reqBody)
   });
+
+  // 503 = servidor de Google saturado (no es culpa nuestra ni de la cuota).
+  // Lo marcamos como error reintentable con backoff.
+  if (res.status === 503 || res.status === 500 || res.status === 429) {
+    let m = 'OVERLOAD';
+    try { const ed = await res.json(); m = (ed.error && ed.error.message) || m; } catch (e) {}
+    const err = new Error(m);
+    err.retryable = (res.status === 503 || res.status === 500);
+    err.httpStatus = res.status;
+    throw err;
+  }
+
   const data = await res.json();
 
   if (data.error) throw new Error(data.error.message || 'Error de API');
@@ -1994,6 +2036,75 @@ async function callGemini(prompt, withSearch, key) {
   }
 
   return parseLooseJSON(rawText);
+}
+
+/* ── MOTOR MATEMÁTICO POISSON + DIXON-COLES ──
+   Estándar de la industria para predecir fútbol. A partir de los goles
+   esperados (xG) de cada equipo, calcula la matriz de probabilidades de cada
+   marcador y de ahí las probabilidades de victoria/empate/derrota.
+   La corrección Dixon-Coles ajusta los marcadores bajos (el Poisson puro
+   subestima los empates 0-0 y 1-1). */
+function poissonProb(lambda, k) {
+  // P(X=k) = (λ^k · e^-λ) / k!
+  let fact = 1;
+  for (let i = 2; i <= k; i++) fact *= i;
+  return (Math.pow(lambda, k) * Math.exp(-lambda)) / fact;
+}
+
+function dixonColesTau(i, j, lh, la, rho) {
+  // Ajuste para los 4 marcadores bajos
+  if (i === 0 && j === 0) return 1 - lh * la * rho;
+  if (i === 0 && j === 1) return 1 + lh * rho;
+  if (i === 1 && j === 0) return 1 + la * rho;
+  if (i === 1 && j === 1) return 1 - rho;
+  return 1;
+}
+
+function computeMatchProbabilities(xgLocal, xgVisitante) {
+  // Acotamos los xG a un rango sensato
+  const lh = Math.max(0.2, Math.min(4.5, xgLocal));
+  const la = Math.max(0.2, Math.min(4.5, xgVisitante));
+  const rho = -0.05; // parámetro de correlación típico de Dixon-Coles
+  const MAXG = 8;    // consideramos hasta 8 goles por equipo
+  let pLocal = 0, pEmpate = 0, pVisitante = 0;
+  let best = { p: -1, i: 0, j: 0 };
+  for (let i = 0; i <= MAXG; i++) {
+    for (let j = 0; j <= MAXG; j++) {
+      let p = poissonProb(lh, i) * poissonProb(la, j) * dixonColesTau(i, j, lh, la, rho);
+      if (p < 0) p = 0;
+      if (i > j) pLocal += p;
+      else if (i === j) pEmpate += p;
+      else pVisitante += p;
+      if (p > best.p) best = { p: p, i: i, j: j };
+    }
+  }
+  const total = pLocal + pEmpate + pVisitante || 1;
+  // Redondeo que garantiza que los tres porcentajes sumen EXACTAMENTE 100
+  // (evita descuadres visuales en las barras).
+  let pl = Math.round((pLocal / total) * 100);
+  let pe = Math.round((pEmpate / total) * 100);
+  let pv = Math.round((pVisitante / total) * 100);
+  const diff = 100 - (pl + pe + pv);
+  if (diff !== 0) {
+    // Si local y visitante están empatados (partido simétrico), el ajuste va al
+    // empate, para no romper la simetría. Si no, al componente más grande.
+    if (pl === pv) {
+      pe += diff;
+    } else if (pl > pv && pl >= pe) {
+      pl += diff;
+    } else if (pv > pl && pv >= pe) {
+      pv += diff;
+    } else {
+      pe += diff;
+    }
+  }
+  return {
+    probLocal: pl,
+    probEmpate: pe,
+    probVisitante: pv,
+    marcadorMasProbable: best.i + '-' + best.j,
+    xgLocal: lh, xgVisitante: la
+  };
 }
 
 /* ── RENDER RESULTS ── */
@@ -2031,6 +2142,27 @@ function renderResults(d, local, visitor, lf, vf, phase, fromCache) {
   p.probabilidad_local = num(p.probabilidad_local, 0, 100);
   p.probabilidad_empate = num(p.probabilidad_empate, 0, 100);
   p.probabilidad_visitante = num(p.probabilidad_visitante, 0, 100);
+
+  // ── CAPA MATEMÁTICA (Poisson + Dixon-Coles) ──
+  // Si el modelo aportó goles esperados (xG), calculamos las probabilidades y
+  // el marcador más probable de forma matemáticamente rigurosa, en vez de usar
+  // las cifras que "intuye" el modelo. Es el estándar de la industria.
+  const xgL = parseFloat(p.xg_local);
+  const xgV = parseFloat(p.xg_visitante);
+  if (!isNaN(xgL) && !isNaN(xgV) && xgL > 0 && xgV > 0) {
+    const calc = computeMatchProbabilities(xgL, xgV);
+    p.probabilidad_local = calc.probLocal;
+    p.probabilidad_empate = calc.probEmpate;
+    p.probabilidad_visitante = calc.probVisitante;
+    // Si el marcador del modelo no encaja con los xG, usamos el matemático
+    if (!/\d+\s*[-–:]\s*\d+/.test(String(p.marcador_probable))) {
+      p.marcador_probable = calc.marcadorMasProbable;
+    }
+    // Guardamos los xG REALMENTE usados (acotados) para mostrarlos de forma coherente
+    p._xgL = calc.xgLocal;
+    p._xgV = calc.xgVisitante;
+    p._mathUsed = true;
+  }
 
   // Separar el marcador "2-1" en goles de local y visitante (tolerante a formatos raros)
   let golLocal = ND, golVisitante = ND;
@@ -2143,6 +2275,7 @@ function renderResults(d, local, visitor, lf, vf, phase, fromCache) {
         <div class="pb pb-d" style="width:${p.probabilidad_empate}%"></div>
         <div class="pb pb-v" style="width:${p.probabilidad_visitante}%"></div>
       </div>
+      ${p._mathUsed ? `<div style="font-size:10px;color:var(--muted);text-align:center;margin-bottom:10px">📐 Probabilidades calculadas con modelo Poisson (Dixon-Coles) · xG ${esc(local)} ${Number(p._xgL).toFixed(1)} − ${Number(p._xgV).toFixed(1)} ${esc(visitor)}</div>` : ''}
       <div class="narrative">${esc(p.resumen_narrativo)}</div>
     </div>
 
